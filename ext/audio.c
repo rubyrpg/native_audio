@@ -3,24 +3,41 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 
-VALUE audio_clip_play(VALUE self)
+Mix_Chunk *sounds[1024];
+int sound_count = 0;
+
+VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
+{
+  Mix_Chunk *sound = sounds[NUM2INT(clip)];
+  int channel = Mix_PlayChannel(NUM2INT(channel_id), sound, 0);
+  return rb_int2inum(channel);
+}
+
+VALUE audio_load(VALUE self, VALUE file)
 {
   Mix_Chunk *sound = NULL;
-  sound = Mix_LoadWAV("boom.wav");
+  sound = Mix_LoadWAV(StringValueCStr(file));
   if(sound == NULL)
   {
     fprintf(stderr, "Unable to load WAV file: %s\n", Mix_GetError());
   }
 
-  int channel;
-  channel = Mix_PlayChannel(-1, sound, 0);
+  sounds[0] = sound;
+  sound_count++;
 
-  return self;
+  return rb_int2inum(sound_count - 1);
 }
 
-VALUE audio_clip_initialize(VALUE self)
+VALUE audio_set_pos(VALUE self, VALUE channel_id, VALUE angle, VALUE distance)
 {
-  return self;
+  Mix_SetPosition(NUM2INT(channel_id), NUM2INT(angle), NUM2INT(distance));
+  return Qnil;
+}
+
+VALUE audio_stop(VALUE self, VALUE channel_id)
+{
+  Mix_HaltChannel(NUM2INT(channel_id));
+  return Qnil;
 }
 
 void Init_audio()
@@ -35,7 +52,8 @@ void Init_audio()
   if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) { exit(1); }
 
   VALUE mAudio = rb_define_module("Audio");
-  VALUE cClip = rb_define_class_under(mAudio, "Clip", rb_cObject);
-  rb_define_method(cClip, "initialize", audio_clip_initialize, 0);
-  rb_define_method(cClip, "play", audio_clip_play, 0);
+  rb_define_singleton_method(mAudio, "load", audio_load, 1);
+  rb_define_singleton_method(mAudio, "play", audio_play, 2);
+  rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
+  rb_define_singleton_method(mAudio, "stop", audio_stop, 1);
 }
