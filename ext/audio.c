@@ -40,6 +40,18 @@ VALUE audio_stop(VALUE self, VALUE channel_id)
   return Qnil;
 }
 
+VALUE audio_pause(VALUE self, VALUE channel_id)
+{
+  Mix_Pause(NUM2INT(channel_id));
+  return Qnil;
+}
+
+VALUE audio_resume(VALUE self, VALUE channel_id)
+{
+  Mix_Resume(NUM2INT(channel_id));
+  return Qnil;
+}
+
 void Init_audio()
 {
   if (SDL_Init(SDL_INIT_AUDIO) != 0) { exit(1); }
@@ -56,4 +68,6 @@ void Init_audio()
   rb_define_singleton_method(mAudio, "play", audio_play, 2);
   rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
   rb_define_singleton_method(mAudio, "stop", audio_stop, 1);
+  rb_define_singleton_method(mAudio, "pause", audio_pause, 1);
+  rb_define_singleton_method(mAudio, "resume", audio_resume, 1);
 }
