@@ -3,7 +3,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 
-VALUE foobar_foo_play(VALUE self)
+VALUE audio_clip_play(VALUE self)
 {
   Mix_Chunk *sound = NULL;
   sound = Mix_LoadWAV("boom.wav");
@@ -18,18 +18,12 @@ VALUE foobar_foo_play(VALUE self)
   return self;
 }
 
-VALUE foobar_foo_initialize(VALUE self)
+VALUE audio_clip_initialize(VALUE self)
 {
-  rb_iv_set(self, "@bar", INT2FIX(42));
   return self;
 }
 
-VALUE foobar_foo_bar(VALUE self)
-{
-  return rb_iv_get(self, "@bar");
-}
-
-void Init_foobar()
+void Init_audio()
 {
   if (SDL_Init(SDL_INIT_AUDIO) != 0) { exit(1); }
 
@@ -40,9 +34,8 @@ void Init_foobar()
 
   if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) { exit(1); }
 
-  VALUE mFoobar = rb_define_module("Foobar");
-  VALUE cFoo = rb_define_class_under(mFoobar, "Foo", rb_cObject);
-  rb_define_method(cFoo, "initialize", foobar_foo_initialize, 0);
-  rb_define_method(cFoo, "bar", foobar_foo_bar, 0);
-  rb_define_method(cFoo, "play", foobar_foo_play, 0);
+  VALUE mAudio = rb_define_module("Audio");
+  VALUE cClip = rb_define_class_under(mAudio, "Clip", rb_cObject);
+  rb_define_method(cClip, "initialize", audio_clip_initialize, 0);
+  rb_define_method(cClip, "play", audio_clip_play, 0);
 }

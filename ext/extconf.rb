@@ -3,18 +3,18 @@ require 'mkmf'
 
 case RUBY_PLATFORM
 when /darwin/
-  $RUBY2D_PLATFORM = :macos
+  $PLATFORM = :macos
 when /linux/
-  $RUBY2D_PLATFORM = :linux
+  $PLATFORM = :linux
   if `cat /etc/os-release` =~ /raspbian/
-    $RUBY2D_PLATFORM = :linux_rpi
+    $PLATFORM = :linux_rpi
   end
 when /bsd/
-  $RUBY2D_PLATFORM = :bsd
+  $PLATFORM = :bsd
 when /mingw/
-  $RUBY2D_PLATFORM = :windows
+  $PLATFORM = :windows
 else
-  $RUBY2D_PLATFORM = nil
+  $PLATFORM = nil
 end
 $errors = []  # Holds errors
 
@@ -90,13 +90,13 @@ def set_linux_bsd_flags
   check_sdl
   set_rpi_flags
   add_flags(:ld, "-lSDL2 -lSDL2_mixer -lm")
-  if $RUBY2D_PLATFORM == :linux then add_flags(:ld, '-lGL') end
+  if $PLATFORM == :linux then add_flags(:ld, '-lGL') end
 end
 
 
 # Use SDL and other libraries installed by the user (not those bundled with the gem)
 def use_usr_libs
-  case $RUBY2D_PLATFORM
+  case $PLATFORM
   when :macos
     add_flags(:c, `sdl2-config --cflags`)
     add_flags(:c, '-I/opt/homebrew/include')
@@ -123,7 +123,7 @@ if ARGV.include? 'dev'
 else
   add_flags(:c, '-std=c11')
 
-  case $RUBY2D_PLATFORM
+  case $PLATFORM
   when :macos
     add_flags(:c, '-I../assets/include')
     ldir = "#{Dir.pwd}/../assets/macos/universal/lib"
@@ -185,4 +185,5 @@ $CFLAGS.gsub!(/\n/, ' ')  # remove newlines in flags, they can cause problems
 $LDFLAGS.gsub!(/\n/, ' ')  # remove newlines in flags, they can cause problems
 
 # Create Makefile
-create_makefile('foobar')
+create_header
+create_makefile('audio')

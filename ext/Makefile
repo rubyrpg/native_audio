@@ -77,7 +77,7 @@ OUTFLAG = -o $(empty)
 COUTFLAG = -o $(empty)
 CSRCFLAG = $(empty)
 
-RUBY_EXTCONF_H = 
+RUBY_EXTCONF_H = extconf.h
 cflags   = -fdeclspec $(optflags) $(debugflags) $(warnflags)
 cxxflags = 
 optflags = -O3 -fno-fast-math
@@ -88,9 +88,9 @@ CCDLFLAGS = -fno-common
 CFLAGS   = $(CCDLFLAGS) $(cflags) -pipe -std=c11  -I../assets/include  $(ARCH_FLAG)
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir)
 DEFS     = 
-CPPFLAGS =  -I/opt/homebrew/opt/readline/include -I/opt/homebrew/opt/libyaml/include -I/opt/homebrew/opt/gdbm/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
+CPPFLAGS = -DRUBY_EXTCONF_H=\"$(RUBY_EXTCONF_H)\" -I/opt/homebrew/opt/readline/include -I/opt/homebrew/opt/libyaml/include -I/opt/homebrew/opt/gdbm/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) -fdeclspec $(ARCH_FLAG)
-ldflags  = -L. -fstack-protector-strong -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/libyaml/lib -L/opt/homebrew/opt/gdbm/lib /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libSDL2.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libSDL2_image.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libSDL2_mixer.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libSDL2_ttf.a  /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libjpeg.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libjxl.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libavif.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libzstd.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libbrotlicommon-static.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libbrotlidec-static.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libhwy.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libpng.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libtiff.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libwebp.a  /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libmpg123.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libogg.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libFLAC.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libvorbis.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libvorbisfile.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libmodplug.a  /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libfreetype.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libharfbuzz.a /Users/maxhatfull/dev/raw_native_fun/ext/../assets/macos/universal/lib/libgraphite2.a  -lz -lbz2 -liconv -lstdc++  -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,GameController -Wl,-framework,ForceFeedback -Wl,-framework,OpenGL -Wl,-framework,AudioToolbox -Wl,-framework,CoreAudio -Wl,-framework,IOKit -Wl,-framework,CoreHaptics -Wl,-framework,CoreVideo -Wl,-framework,Metal 
+ldflags  = -L. -fstack-protector-strong -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/libyaml/lib -L/opt/homebrew/opt/gdbm/lib /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libSDL2.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libSDL2_image.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libSDL2_mixer.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libSDL2_ttf.a  /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libjpeg.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libjxl.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libavif.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libzstd.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libbrotlicommon-static.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libbrotlidec-static.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libhwy.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libpng.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libtiff.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libwebp.a  /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libmpg123.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libogg.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libFLAC.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libvorbis.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libvorbisfile.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libmodplug.a  /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libfreetype.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libharfbuzz.a /Users/maxhatfull/dev/native_audio/ext/../assets/macos/universal/lib/libgraphite2.a  -lz -lbz2 -liconv -lstdc++  -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,GameController -Wl,-framework,ForceFeedback -Wl,-framework,OpenGL -Wl,-framework,AudioToolbox -Wl,-framework,CoreAudio -Wl,-framework,IOKit -Wl,-framework,CoreHaptics -Wl,-framework,CoreVideo -Wl,-framework,Metal 
 dldflags = -L/opt/homebrew/opt/readline/lib -L/opt/homebrew/opt/libyaml/lib -L/opt/homebrew/opt/gdbm/lib -Wl,-undefined,dynamic_lookup -bundle_loader '$(BUILTRUBY)'
 ARCH_FLAG = -arch arm64
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
@@ -112,7 +112,7 @@ ruby_version = 3.3.0
 ruby = $(bindir)/$(RUBY_BASE_NAME)
 RUBY = $(ruby)
 BUILTRUBY = $(bindir)/$(RUBY_BASE_NAME)
-ruby_headers = $(hdrdir)/ruby.h $(hdrdir)/ruby/backward.h $(hdrdir)/ruby/ruby.h $(hdrdir)/ruby/defines.h $(hdrdir)/ruby/missing.h $(hdrdir)/ruby/intern.h $(hdrdir)/ruby/st.h $(hdrdir)/ruby/subst.h $(arch_hdrdir)/ruby/config.h
+ruby_headers = $(hdrdir)/ruby.h $(hdrdir)/ruby/backward.h $(hdrdir)/ruby/ruby.h $(hdrdir)/ruby/defines.h $(hdrdir)/ruby/missing.h $(hdrdir)/ruby/intern.h $(hdrdir)/ruby/st.h $(hdrdir)/ruby/subst.h $(arch_hdrdir)/ruby/config.h $(RUBY_EXTCONF_H)
 
 RM = rm -f
 RM_RF = rm -fr
@@ -140,13 +140,13 @@ extout_prefix =
 target_prefix = 
 LOCAL_LIBS = 
 LIBS =   -lpthread  
-ORIG_SRCS = foobar.c
+ORIG_SRCS = audio.c
 SRCS = $(ORIG_SRCS) 
-OBJS = foobar.o
+OBJS = audio.o
 HDRS = $(srcdir)/extconf.h
 LOCAL_HDRS = 
-TARGET = foobar
-TARGET_NAME = foobar
+TARGET = audio
+TARGET_NAME = audio
 TARGET_ENTRY = Init_$(TARGET_NAME)
 DLLIB = $(TARGET).bundle
 EXTSTATIC = 
