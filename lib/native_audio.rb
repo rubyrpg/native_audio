@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "../ext/audio"
+require_relative '../ext/audio'
 
 module NativeAudio
   class Clip
