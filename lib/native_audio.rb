@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../ext/audio'
+require_relative './audio'
 
 module NativeAudio
   class Clip
@@ -48,3 +48,9 @@ module NativeAudio
     end
   end
 end
+
+clip = NativeAudio::Clip.new("boom.wav")
+
+source = NativeAudio::AudioSource.new(clip)
+source.play
+sleep 3

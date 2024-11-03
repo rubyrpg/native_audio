@@ -128,8 +128,8 @@ else
     add_flags(:c, '-I../assets/include')
     ldir = "#{Dir.pwd}/../assets/macos/universal/lib"
 
-    add_flags(:ld, "#{ldir}/libSDL2.a #{ldir}/libSDL2_image.a #{ldir}/libSDL2_mixer.a #{ldir}/libSDL2_ttf.a")
-    add_flags(:ld, "#{ldir}/libjpeg.a #{ldir}/libjxl.a #{ldir}/libavif.a #{ldir}/libzstd.a #{ldir}/libbrotlicommon-static.a #{ldir}/libbrotlidec-static.a #{ldir}/libhwy.a #{ldir}/libpng.a #{ldir}/libtiff.a #{ldir}/libwebp.a")
+    add_flags(:ld, "#{ldir}/libSDL2.a #{ldir}/libSDL2_mixer.a")
+    add_flags(:ld, "#{ldir}/libjpeg.a #{ldir}/libjxl.a #{ldir}/libavif.a #{ldir}/libzstd.a #{ldir}/libbrotlicommon-static.a #{ldir}/libbrotlidec-static.a #{ldir}/libhwy.a #{ldir}/libtiff.a #{ldir}/libwebp.a")
     add_flags(:ld, "#{ldir}/libmpg123.a #{ldir}/libogg.a #{ldir}/libFLAC.a #{ldir}/libvorbis.a #{ldir}/libvorbisfile.a #{ldir}/libmodplug.a")
     add_flags(:ld, "#{ldir}/libfreetype.a #{ldir}/libharfbuzz.a #{ldir}/libgraphite2.a")
     add_flags(:ld, "-lz -lbz2 -liconv -lstdc++")
@@ -152,7 +152,7 @@ else
 
     # SDL2_image
     add_flags(:ld, "#{ldir}/libSDL2_image.a")
-    add_flags(:ld, "#{ldir}/libjpeg.a #{ldir}/libpng.a #{ldir}/libtiff.a #{ldir}/libwebp.a")
+    add_flags(:ld, "#{ldir}/libjpeg.a #{ldir}/libtiff.a #{ldir}/libwebp.a")
     add_flags(:ld, "#{ldir}/libjxl.a #{ldir}/libhwy.a #{ldir}/libjbig.a #{ldir}/libdeflate.a #{ldir}/liblzma.a #{ldir}/libzstd.a #{ldir}/libLerc.a")
 
     # SDL2_mixer
