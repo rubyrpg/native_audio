@@ -39,6 +39,10 @@ module NativeAudio
       Audio.set_pos(@channel, angle, distance)
     end
 
+    def set_volume(volume)
+      Audio.set_volume(@channel, volume)
+    end
+
     def self.channels
       @channels ||= []
     end
@@ -49,11 +53,16 @@ clip = NativeAudio::Clip.new("boom.wav")
 
 source = NativeAudio::AudioSource.new(clip)
 source.play
-sleep 3
-source.pause
-sleep 1
-source.resume
-sleep 3
+
+0.upto(100) do |i|
+  source.set_volume(i)
+  sleep 0.01
+end
+
+100.downto(0) do |i|
+  source.set_volume(i)
+  sleep 0.01
+end
 
 
 
