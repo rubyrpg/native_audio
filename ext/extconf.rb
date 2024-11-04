@@ -104,7 +104,7 @@ def use_usr_libs
     add_flags(:ld, '-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf')
     add_flags(:ld, '-Wl,-framework,OpenGL')
   when :windows
-    add_flags(:ld, '-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf')
+    add_flags(:ld, '-lSDL2 -lSDL2_mixer')
     add_flags(:ld, '-lopengl32 -lglew32')
   when :linux_rpi
     set_linux_bsd_flags
@@ -129,10 +129,8 @@ else
     ldir = "#{Dir.pwd}/../assets/macos/universal/lib"
 
     add_flags(:ld, "#{ldir}/libSDL2.a #{ldir}/libSDL2_mixer.a")
-    add_flags(:ld, "#{ldir}/libjpeg.a #{ldir}/libjxl.a #{ldir}/libavif.a #{ldir}/libzstd.a #{ldir}/libbrotlicommon-static.a #{ldir}/libbrotlidec-static.a #{ldir}/libhwy.a #{ldir}/libtiff.a #{ldir}/libwebp.a")
     add_flags(:ld, "#{ldir}/libmpg123.a #{ldir}/libogg.a #{ldir}/libFLAC.a #{ldir}/libvorbis.a #{ldir}/libvorbisfile.a #{ldir}/libmodplug.a")
-    add_flags(:ld, "#{ldir}/libfreetype.a #{ldir}/libharfbuzz.a #{ldir}/libgraphite2.a")
-    add_flags(:ld, "-lz -lbz2 -liconv -lstdc++")
+    add_flags(:ld, "-lz -liconv -lstdc++")
     add_flags(:ld, "-Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,GameController -Wl,-framework,ForceFeedback -Wl,-framework,OpenGL -Wl,-framework,AudioToolbox -Wl,-framework,CoreAudio -Wl,-framework,IOKit -Wl,-framework,CoreHaptics -Wl,-framework,CoreVideo -Wl,-framework,Metal")
 
   when :windows
@@ -150,20 +148,10 @@ else
     # SDL2
     add_flags(:ld, "#{ldir}/libSDL2.a")
 
-    # SDL2_image
-    add_flags(:ld, "#{ldir}/libSDL2_image.a")
-    add_flags(:ld, "#{ldir}/libjpeg.a #{ldir}/libtiff.a #{ldir}/libwebp.a")
-    add_flags(:ld, "#{ldir}/libjxl.a #{ldir}/libhwy.a #{ldir}/libjbig.a #{ldir}/libdeflate.a #{ldir}/liblzma.a #{ldir}/libzstd.a #{ldir}/libLerc.a")
-
     # SDL2_mixer
     add_flags(:ld, "#{ldir}/libSDL2_mixer.a")
     add_flags(:ld, "#{ldir}/libmpg123.a #{ldir}/libFLAC.a #{ldir}/libvorbis.a #{ldir}/libvorbisfile.a #{ldir}/libogg.a "\
       "#{ldir}/libmodplug.a #{ldir}/libopus.a #{ldir}/libopusfile.a #{ldir}/libsndfile.a")
-
-    # SDL2_ttf
-    add_flags(:ld, "#{ldir}/libSDL2_ttf.a")
-    add_flags(:ld, "#{ldir}/libfreetype.a #{ldir}/libharfbuzz.a #{ldir}/libgraphite2.a "\
-      "#{ldir}/libbz2.a #{ldir}/libbrotlicommon.a #{ldir}/libbrotlidec.a")
 
     # Other dependencies
     add_flags(:ld, "#{ldir}/libglew32.a #{ldir}/libstdc++.a #{ldir}/libz.a")

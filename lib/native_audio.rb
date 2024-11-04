@@ -48,9 +48,3 @@ module NativeAudio
     end
   end
 end
-
-clip = NativeAudio::Clip.new("boom.wav")
-
-source = NativeAudio::AudioSource.new(clip)
-source.play
-sleep 3
