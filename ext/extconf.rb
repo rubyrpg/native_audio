@@ -51,13 +51,11 @@ def check_sdl
         $errors << "Install the following packages using `yum` (or `dnf`) and try again:\n" <<
           "  SDL2-devel SDL2_mixer-devel".bold
 
-        # Arch
-      elsif system('which pacman')
+      elsif system('which pacman') # Arch
         $errors << "Install the following packages using `pacman` and try again:\n" <<
           "  sdl2 sdl2_mixer".bold
 
-        # openSUSE
-      elsif system('which zypper')
+      elsif system('which zypper') # openSUSE
         $errors << "Install the following packages using `zypper` and try again:\n" <<
           "  libSDL2-devel libSDL2_mixer-devel".bold
 
@@ -119,8 +117,7 @@ end
 if ARGV.include? 'dev'
   use_usr_libs
 
-  # Use libraries provided by the gem (default)
-else
+else # Use libraries provided by the gem (default)
   add_flags(:c, '-std=c11')
 
   case $PLATFORM
@@ -163,8 +160,7 @@ else
   when :linux, :linux_rpi, :bsd
     set_linux_bsd_flags
 
-    # If can't detect the platform, use libraries installed by the user
-  else
+  else # If can't detect the platform, use libraries installed by the user
     use_usr_libs
   end
 end
