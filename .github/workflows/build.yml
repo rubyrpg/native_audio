@@ -1,0 +1,64 @@
+name: Build Native Gems
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ruby: ['3.4', '4.0']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Build native extension
+        run: bundle exec rake compile
+
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby: ['3.4', '4.0']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SDL2 dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Build native extension
+        run: bundle exec rake compile
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        ruby: ['3.4', '4.0']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Build native extension
+        run: bundle exec rake compile

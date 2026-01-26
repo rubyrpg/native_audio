@@ -3,3 +3,11 @@
 
 # mac folders
 .DS_Store
+
+# Build artifacts
+tmp/
+*.gem
+lib/*.bundle
+lib/*.so
+Gemfile.lock
+mkmf.log
