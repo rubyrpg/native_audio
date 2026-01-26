@@ -6,10 +6,9 @@ ASSETS_DIR = File.join(ROOT_DIR, 'assets')
 
 # Detect platform
 PLATFORM = case RUBY_PLATFORM
-when /darwin/  then :macos
-when /linux/   then `cat /etc/os-release 2>/dev/null` =~ /raspbian/ ? :linux_rpi : :linux
-when /bsd/     then :bsd
-when /mingw/   then :windows
+when /darwin/ then :macos
+when /linux/  then :linux
+when /mingw/  then :windows
 end
 
 def add_flags(type, flags)
@@ -24,8 +23,7 @@ def check_sdl
 
   msg = ["SDL2 libraries not found."]
 
-  case PLATFORM
-  when :linux, :linux_rpi
+  if PLATFORM == :linux
     if system('which apt >/dev/null 2>&1')
       msg << "Install with: sudo apt install libsdl2-dev libsdl2-mixer-dev"
     elsif system('which dnf >/dev/null 2>&1') || system('which yum >/dev/null 2>&1')
@@ -35,14 +33,12 @@ def check_sdl
     elsif system('which zypper >/dev/null 2>&1')
       msg << "Install with: sudo zypper install libSDL2-devel libSDL2_mixer-devel"
     end
-  when :bsd
-    msg << "Install with: pkg install sdl2 sdl2_mixer"
   end
 
   abort msg.join("\n")
 end
 
-def set_linux_bsd_flags
+def set_linux_flags
   check_sdl
   add_flags(:ld, "-lSDL2 -lSDL2_mixer -lm")
 end
@@ -56,8 +52,8 @@ def use_dev_libs
     add_flags(:ld, '-lSDL2 -lSDL2_mixer')
   when :windows
     add_flags(:ld, '-lSDL2 -lSDL2_mixer')
-  when :linux, :linux_rpi, :bsd
-    set_linux_bsd_flags
+  when :linux
+    set_linux_flags
   end
 end
 
@@ -97,8 +93,8 @@ def use_bundled_libs
     add_flags(:ld, '-lversion -lwinmm -lrpcrt4 -mwindows -lsetupapi -ldwrite')
     add_flags(:ld, "-Wl,--end-group")
 
-  when :linux, :linux_rpi, :bsd
-    set_linux_bsd_flags
+  when :linux
+    set_linux_flags
 
   else
     use_dev_libs
