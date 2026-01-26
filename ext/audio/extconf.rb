@@ -45,11 +45,6 @@ end
 def set_linux_bsd_flags
   check_sdl
   add_flags(:ld, "-lSDL2 -lSDL2_mixer -lm")
-  add_flags(:ld, '-lGL') if PLATFORM == :linux
-  if PLATFORM == :linux_rpi
-    add_flags(:c, '-I/opt/vc/include')
-    add_flags(:ld, '-L/opt/vc/lib -lbrcmGLESv2')
-  end
 end
 
 def use_dev_libs
@@ -79,7 +74,7 @@ def use_bundled_libs
     add_flags(:ld, "#{ldir}/libvorbis.a #{ldir}/libvorbisfile.a #{ldir}/libmodplug.a")
     add_flags(:ld, "-lz -liconv -lstdc++")
 
-    frameworks = %w[Cocoa Carbon GameController ForceFeedback OpenGL
+    frameworks = %w[Cocoa Carbon GameController ForceFeedback
                     AudioToolbox CoreAudio IOKit CoreHaptics CoreVideo Metal]
     add_flags(:ld, frameworks.map { |f| "-Wl,-framework,#{f}" }.join(' '))
 
@@ -97,8 +92,8 @@ def use_bundled_libs
     add_flags(:ld, "#{ldir}/libmpg123.a #{ldir}/libFLAC.a #{ldir}/libvorbis.a")
     add_flags(:ld, "#{ldir}/libvorbisfile.a #{ldir}/libogg.a #{ldir}/libmodplug.a")
     add_flags(:ld, "#{ldir}/libopus.a #{ldir}/libopusfile.a #{ldir}/libsndfile.a")
-    add_flags(:ld, "#{ldir}/libglew32.a #{ldir}/libstdc++.a #{ldir}/libz.a")
-    add_flags(:ld, '-lmingw32 -lopengl32 -lole32 -loleaut32 -limm32')
+    add_flags(:ld, "#{ldir}/libstdc++.a #{ldir}/libz.a")
+    add_flags(:ld, '-lmingw32 -lole32 -loleaut32 -limm32')
     add_flags(:ld, '-lversion -lwinmm -lrpcrt4 -mwindows -lsetupapi -ldwrite')
     add_flags(:ld, "-Wl,--end-group")
 
