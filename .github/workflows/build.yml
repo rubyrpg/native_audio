@@ -24,6 +24,16 @@ jobs:
       - name: Build native extension
         run: bundle exec rake compile
 
+      - name: Build and install gem
+        run: |
+          gem build native_audio.gemspec
+          gem install native_audio-*.gem
+
+      - name: Verify gem loads
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'; exit 0"
+        env:
+          SDL_AUDIODRIVER: dummy
+
   build-ubuntu:
     runs-on: ubuntu-latest
     strategy:
@@ -46,6 +56,16 @@ jobs:
       - name: Build native extension
         run: bundle exec rake compile
 
+      - name: Build and install gem
+        run: |
+          gem build native_audio.gemspec
+          gem install native_audio-*.gem
+
+      - name: Verify gem loads
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'; exit 0"
+        env:
+          SDL_AUDIODRIVER: dummy
+
   build-windows:
     runs-on: windows-latest
     strategy:
@@ -62,3 +82,13 @@ jobs:
 
       - name: Build native extension
         run: bundle exec rake compile
+
+      - name: Build and install gem
+        run: |
+          gem build native_audio.gemspec
+          gem install native_audio-*.gem
+
+      - name: Verify gem loads
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'; exit 0"
+        env:
+          SDL_AUDIODRIVER: dummy
