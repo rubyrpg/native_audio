@@ -9,15 +9,16 @@ Mix_Chunk *sounds[1024];
 int sound_count = 0;
 int audio_initialized = 0;
 
-void audio_cleanup(void)
+VALUE audio_cleanup(VALUE self)
 {
+  (void)self;
   fprintf(stderr, "[native_audio] cleanup: start (initialized=%d, sound_count=%d)\n", audio_initialized, sound_count);
   fflush(stderr);
 
   if (!audio_initialized) {
     fprintf(stderr, "[native_audio] cleanup: skipped (not initialized)\n");
     fflush(stderr);
-    return;
+    return Qnil;
   }
 
   for (int i = 0; i < sound_count; i++) {
@@ -45,6 +46,7 @@ void audio_cleanup(void)
   fprintf(stderr, "[native_audio] cleanup: done\n");
   fflush(stderr);
   audio_initialized = 0;
+  return Qnil;
 }
 
 VALUE audio_init(VALUE self)
@@ -106,9 +108,8 @@ VALUE audio_init(VALUE self)
   fflush(stderr);
 
   audio_initialized = 1;
-  atexit(audio_cleanup);
 
-  fprintf(stderr, "[native_audio] Audio.init: done (atexit registered)\n");
+  fprintf(stderr, "[native_audio] Audio.init: done\n");
   fflush(stderr);
 
   return Qtrue;
@@ -200,6 +201,7 @@ void Init_audio()
 
   VALUE mAudio = rb_define_module("Audio");
   rb_define_singleton_method(mAudio, "init", audio_init, 0);
+  rb_define_singleton_method(mAudio, "cleanup", audio_cleanup, 0);
   rb_define_singleton_method(mAudio, "load", audio_load, 1);
   rb_define_singleton_method(mAudio, "play", audio_play, 2);
   rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
