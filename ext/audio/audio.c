@@ -61,22 +61,8 @@ VALUE audio_init(VALUE self)
     return Qtrue;
   }
 
-  // DEBUGGING: comment out SDL init to find crash point
-  /*
-  fprintf(stderr, "[native_audio] Audio.init: calling SDL_Init\n");
-  fflush(stderr);
-
-  if (SDL_Init(SDL_INIT_AUDIO) != 0) {
-    fprintf(stderr, "[native_audio] Audio.init: SDL_Init FAILED: %s\n", SDL_GetError());
-    fflush(stderr);
-    rb_raise(rb_eRuntimeError, "Failed to initialize SDL audio: %s", SDL_GetError());
-    return Qfalse;
-  }
-
-  fprintf(stderr, "[native_audio] Audio.init: SDL_Init OK\n");
-  fflush(stderr);
-
-  fprintf(stderr, "[native_audio] Audio.init: calling Mix_Init\n");
+  // Try Mix_Init BEFORE SDL_Init (suggested fix for Windows crashes)
+  fprintf(stderr, "[native_audio] Audio.init: calling Mix_Init first\n");
   fflush(stderr);
 
   int mix_flags = MIX_INIT_FLAC | MIX_INIT_OGG | MIX_INIT_MP3;
@@ -88,6 +74,19 @@ VALUE audio_init(VALUE self)
   }
 
   fprintf(stderr, "[native_audio] Audio.init: Mix_Init OK\n");
+  fflush(stderr);
+
+  fprintf(stderr, "[native_audio] Audio.init: calling SDL_Init\n");
+  fflush(stderr);
+
+  if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+    fprintf(stderr, "[native_audio] Audio.init: SDL_Init FAILED: %s\n", SDL_GetError());
+    fflush(stderr);
+    rb_raise(rb_eRuntimeError, "Failed to initialize SDL audio: %s", SDL_GetError());
+    return Qfalse;
+  }
+
+  fprintf(stderr, "[native_audio] Audio.init: SDL_Init OK\n");
   fflush(stderr);
 
   int audio_rate = 44100;
@@ -111,9 +110,8 @@ VALUE audio_init(VALUE self)
   fflush(stderr);
 
   audio_initialized = 1;
-  */
 
-  fprintf(stderr, "[native_audio] Audio.init: done (no-op for debugging)\n");
+  fprintf(stderr, "[native_audio] Audio.init: done\n");
   fflush(stderr);
 
   return Qtrue;
