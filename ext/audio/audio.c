@@ -61,6 +61,8 @@ VALUE audio_init(VALUE self)
     return Qtrue;
   }
 
+  // DEBUGGING: comment out SDL init to find crash point
+  /*
   fprintf(stderr, "[native_audio] Audio.init: calling SDL_Init\n");
   fflush(stderr);
 
@@ -109,8 +111,9 @@ VALUE audio_init(VALUE self)
   fflush(stderr);
 
   audio_initialized = 1;
+  */
 
-  fprintf(stderr, "[native_audio] Audio.init: done\n");
+  fprintf(stderr, "[native_audio] Audio.init: done (no-op for debugging)\n");
   fflush(stderr);
 
   return Qtrue;
