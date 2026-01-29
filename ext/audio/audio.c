@@ -51,7 +51,8 @@ VALUE audio_cleanup(VALUE self)
 
 VALUE audio_init(VALUE self)
 {
-  fprintf(stderr, "[native_audio] Audio.init: start\n");
+  const char* audio_driver_env = getenv("SDL_AUDIODRIVER");
+  fprintf(stderr, "[native_audio] Audio.init: start (SDL_AUDIODRIVER=%s)\n", audio_driver_env ? audio_driver_env : "NOT SET");
   fflush(stderr);
 
   if (audio_initialized) {
