@@ -94,4 +94,4 @@ jobs:
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
-          SDL_AUDIODRIVER: dummy
+          SDL_AUDIODRIVER: directsound
