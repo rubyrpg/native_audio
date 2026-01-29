@@ -2,6 +2,7 @@
 
 require_relative './audio'
 Audio.init
+sleep 1
 
 module NativeAudio
   class Clip
