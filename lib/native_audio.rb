@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 require_relative './audio'
-puts "require done"
+$stderr.puts "require done"
 sleep 1
-puts "slept, initing"
+$stderr.puts "slept, initing"
 Audio.init
-puts "init done"
+$stderr.puts "init done"
 sleep 1
-puts "slept, cleaning up"
+$stderr.puts "slept, cleaning up"
 Audio.cleanup
-puts "cleanup done"
+$stderr.puts "cleanup done"
 sleep 1
-puts "slept, exiting"
+$stderr.puts "slept, exiting"
 
 module NativeAudio
   class Clip
