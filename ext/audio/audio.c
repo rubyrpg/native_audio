@@ -35,9 +35,7 @@ VALUE audio_cleanup(VALUE self)
   fflush(stderr);
   Mix_CloseAudio();
 
-  fprintf(stderr, "[native_audio] cleanup: calling Mix_Quit\n");
-  fflush(stderr);
-  Mix_Quit();
+  // Skip Mix_Quit since we don't call Mix_Init
 
   fprintf(stderr, "[native_audio] cleanup: calling SDL_Quit\n");
   fflush(stderr);
@@ -61,21 +59,7 @@ VALUE audio_init(VALUE self)
     return Qtrue;
   }
 
-  // Try Mix_Init BEFORE SDL_Init (suggested fix for Windows crashes)
-  fprintf(stderr, "[native_audio] Audio.init: calling Mix_Init first\n");
-  fflush(stderr);
-
-  int mix_flags = MIX_INIT_FLAC | MIX_INIT_OGG | MIX_INIT_MP3;
-  int mix_initted = Mix_Init(mix_flags);
-  if ((mix_initted & mix_flags) != mix_flags) {
-    fprintf(stderr, "[native_audio] Audio.init: Mix_Init partial/failed: %s\n", Mix_GetError());
-    fflush(stderr);
-    // Continue anyway - not all formats may be available
-  }
-
-  fprintf(stderr, "[native_audio] Audio.init: Mix_Init OK\n");
-  fflush(stderr);
-
+  // Skip Mix_Init - not needed for WAV, and may cause issues on Windows
   fprintf(stderr, "[native_audio] Audio.init: calling SDL_Init\n");
   fflush(stderr);
 
