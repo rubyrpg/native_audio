@@ -31,7 +31,7 @@ jobs:
           gem install native_audio-*.gem
 
       - name: Verify gem loads
-        run: ruby -e "require 'native_audio'; Audio.init; puts 'native_audio loaded successfully'"
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
           SDL_AUDIODRIVER: dummy
 
@@ -64,7 +64,7 @@ jobs:
           gem install native_audio-*.gem
 
       - name: Verify gem loads
-        run: ruby -e "require 'native_audio'; Audio.init; puts 'native_audio loaded successfully'"
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
           SDL_AUDIODRIVER: dummy
 
@@ -92,6 +92,6 @@ jobs:
           gem install native_audio-*.gem
 
       - name: Verify gem loads
-        run: ruby -e "require 'native_audio'; Audio.init; puts 'native_audio loaded successfully'"
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
           SDL_AUDIODRIVER: dummy

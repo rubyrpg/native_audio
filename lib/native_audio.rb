@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative './audio'
+Audio.init
 
 module NativeAudio
   class Clip
