@@ -2,10 +2,28 @@
 #include "extconf.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
+#include <stdlib.h>
 
 Mix_Chunk *sounds[1024];
 int sound_count = 0;
 int audio_initialized = 0;
+
+void audio_cleanup(void)
+{
+  if (!audio_initialized) return;
+
+  for (int i = 0; i < sound_count; i++) {
+    if (sounds[i] != NULL) {
+      Mix_FreeChunk(sounds[i]);
+      sounds[i] = NULL;
+    }
+  }
+  sound_count = 0;
+
+  Mix_CloseAudio();
+  SDL_Quit();
+  audio_initialized = 0;
+}
 
 VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
 {
@@ -108,9 +126,11 @@ void Init_audio()
   int audio_buffers = 4096;
 
   if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
+    SDL_Quit();
     rb_raise(rb_eRuntimeError, "Failed to open audio: %s", Mix_GetError());
     return;
   }
 
   audio_initialized = 1;
+  atexit(audio_cleanup);
 }
