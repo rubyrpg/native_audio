@@ -88,6 +88,7 @@ def use_bundled_libs
     add_flags(:ld, "#{ldir}/libmpg123.a #{ldir}/libFLAC.a #{ldir}/libvorbis.a")
     add_flags(:ld, "#{ldir}/libvorbisfile.a #{ldir}/libogg.a #{ldir}/libmodplug.a")
     add_flags(:ld, "#{ldir}/libopus.a #{ldir}/libopusfile.a #{ldir}/libsndfile.a")
+    add_flags(:ld, "#{ldir}/libwavpack.a #{ldir}/libxmp.a")
     add_flags(:ld, "#{ldir}/libstdc++.a #{ldir}/libz.a")
     add_flags(:ld, '-lmingw32 -lole32 -loleaut32 -limm32')
     add_flags(:ld, '-lversion -lwinmm -lrpcrt4 -mwindows -lsetupapi -ldwrite')
