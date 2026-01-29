@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 Mix_Chunk *sounds[1024];
 int sound_count = 0;
@@ -10,18 +11,35 @@ int audio_initialized = 0;
 
 void audio_cleanup(void)
 {
-  if (!audio_initialized) return;
+  fprintf(stderr, "[native_audio] cleanup: start (initialized=%d, sound_count=%d)\n", audio_initialized, sound_count);
+  fflush(stderr);
+
+  if (!audio_initialized) {
+    fprintf(stderr, "[native_audio] cleanup: skipped (not initialized)\n");
+    fflush(stderr);
+    return;
+  }
 
   for (int i = 0; i < sound_count; i++) {
     if (sounds[i] != NULL) {
+      fprintf(stderr, "[native_audio] cleanup: freeing sound %d\n", i);
+      fflush(stderr);
       Mix_FreeChunk(sounds[i]);
       sounds[i] = NULL;
     }
   }
   sound_count = 0;
 
+  fprintf(stderr, "[native_audio] cleanup: calling Mix_CloseAudio\n");
+  fflush(stderr);
   Mix_CloseAudio();
+
+  fprintf(stderr, "[native_audio] cleanup: calling SDL_Quit\n");
+  fflush(stderr);
   SDL_Quit();
+
+  fprintf(stderr, "[native_audio] cleanup: done\n");
+  fflush(stderr);
   audio_initialized = 0;
 }
 
@@ -106,6 +124,9 @@ VALUE audio_set_volume(VALUE self, VALUE channel_id, VALUE volume)
 
 void Init_audio()
 {
+  fprintf(stderr, "[native_audio] init: start\n");
+  fflush(stderr);
+
   VALUE mAudio = rb_define_module("Audio");
   rb_define_singleton_method(mAudio, "load", audio_load, 1);
   rb_define_singleton_method(mAudio, "play", audio_play, 2);
@@ -115,22 +136,41 @@ void Init_audio()
   rb_define_singleton_method(mAudio, "resume", audio_resume, 1);
   rb_define_singleton_method(mAudio, "set_volume", audio_set_volume, 2);
 
+  fprintf(stderr, "[native_audio] init: calling SDL_Init\n");
+  fflush(stderr);
+
   if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+    fprintf(stderr, "[native_audio] init: SDL_Init FAILED: %s\n", SDL_GetError());
+    fflush(stderr);
     rb_raise(rb_eRuntimeError, "Failed to initialize SDL audio: %s", SDL_GetError());
     return;
   }
+
+  fprintf(stderr, "[native_audio] init: SDL_Init OK\n");
+  fflush(stderr);
 
   int audio_rate = 22050;
   Uint16 audio_format = AUDIO_S16SYS;
   int audio_channels = 2;
   int audio_buffers = 4096;
 
+  fprintf(stderr, "[native_audio] init: calling Mix_OpenAudio\n");
+  fflush(stderr);
+
   if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
+    fprintf(stderr, "[native_audio] init: Mix_OpenAudio FAILED: %s\n", Mix_GetError());
+    fflush(stderr);
     SDL_Quit();
     rb_raise(rb_eRuntimeError, "Failed to open audio: %s", Mix_GetError());
     return;
   }
 
+  fprintf(stderr, "[native_audio] init: Mix_OpenAudio OK\n");
+  fflush(stderr);
+
   audio_initialized = 1;
   atexit(audio_cleanup);
+
+  fprintf(stderr, "[native_audio] init: done (atexit registered)\n");
+  fflush(stderr);
 }
