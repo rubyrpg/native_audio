@@ -79,3 +79,9 @@ To test:
 ```bash
 ruby test_audio.rb
 ```
+
+## Releasing
+
+1. Update the version in `native_audio.gemspec`
+2. Go to GitHub Actions → "Release to RubyGems"
+3. Click "Run workflow" → "Run workflow"
