@@ -78,57 +78,6 @@ static void cleanup_audio(VALUE unused)
 #endif
 }
 
-// ============================================================================
-// Engine Initialization
-// ============================================================================
-
-static void ensure_engine_initialized(void)
-{
-    if (engine_initialized) {
-        return;
-    }
-
-    // Check for null driver (for CI environments without audio devices)
-    // Usage: NATIVE_AUDIO_DRIVER=null ruby script.rb
-    const char *driver = getenv("NATIVE_AUDIO_DRIVER");
-    int use_null = (driver != NULL && strcmp(driver, "null") == 0);
-
-    ma_engine_config config = ma_engine_config_init();
-    config.listenerCount = 1;
-
-    if (use_null) {
-        ma_backend backends[] = { ma_backend_null };
-        ma_result ctx_result = ma_context_init(backends, 1, NULL, &context);
-        if (ctx_result != MA_SUCCESS) {
-            rb_raise(rb_eRuntimeError, "Failed to initialize null audio context");
-            return;
-        }
-        context_initialized = 1;
-        using_null_backend = 1;
-        config.pContext = &context;
-    }
-
-    ma_result result = ma_engine_init(&config, &engine);
-
-    if (result != MA_SUCCESS) {
-        if (context_initialized) {
-            ma_context_uninit(&context);
-            context_initialized = 0;
-        }
-        rb_raise(rb_eRuntimeError, "Failed to initialize audio engine");
-        return;
-    }
-
-    engine_initialized = 1;
-    rb_set_end_proc(cleanup_audio, Qnil);
-}
-
-// Audio.init - Initialize the audio engine
-VALUE audio_init(VALUE self)
-{
-    ensure_engine_initialized();
-    return Qnil;
-}
 
 // ============================================================================
 // Audio Loading
@@ -337,10 +286,43 @@ void Init_audio(void)
     for (int i = 0; i < MAX_SOUNDS; i++) sounds[i] = NULL;
     for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = NULL;
 
-    VALUE mAudio = rb_define_module("Audio");
+    // Initialize audio engine
+    // Check for null driver (for CI environments without audio devices)
+    // Usage: NATIVE_AUDIO_DRIVER=null ruby script.rb
+    const char *driver = getenv("NATIVE_AUDIO_DRIVER");
+    int use_null = (driver != NULL && strcmp(driver, "null") == 0);
 
-    // Initialization
-    rb_define_singleton_method(mAudio, "init", audio_init, 0);
+    ma_engine_config config = ma_engine_config_init();
+    config.listenerCount = 1;
+
+    if (use_null) {
+        ma_backend backends[] = { ma_backend_null };
+        ma_result ctx_result = ma_context_init(backends, 1, NULL, &context);
+        if (ctx_result != MA_SUCCESS) {
+            rb_raise(rb_eRuntimeError, "Failed to initialize null audio context");
+            return;
+        }
+        context_initialized = 1;
+        using_null_backend = 1;
+        config.pContext = &context;
+    }
+
+    ma_result result = ma_engine_init(&config, &engine);
+
+    if (result != MA_SUCCESS) {
+        if (context_initialized) {
+            ma_context_uninit(&context);
+            context_initialized = 0;
+        }
+        rb_raise(rb_eRuntimeError, "Failed to initialize audio engine");
+        return;
+    }
+
+    engine_initialized = 1;
+    rb_set_end_proc(cleanup_audio, Qnil);
+
+    // Define Ruby module
+    VALUE mAudio = rb_define_module("Audio");
 
     // Loading
     rb_define_singleton_method(mAudio, "load", audio_load, 1);
