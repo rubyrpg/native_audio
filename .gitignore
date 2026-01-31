@@ -9,5 +9,10 @@ tmp/
 *.gem
 lib/*.bundle
 lib/*.so
+lib/*.dll
 Gemfile.lock
 mkmf.log
+*.o
+*.dSYM
+ext/**/Makefile
+ext/**/extconf.h
