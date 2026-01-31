@@ -30,9 +30,7 @@ jobs:
           gem install native_audio-*.gem
 
       - name: Verify gem loads
-        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'; exit 0"
-        env:
-          SDL_AUDIODRIVER: dummy
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
 
   build-ubuntu:
     runs-on: ubuntu-latest
@@ -41,11 +39,6 @@ jobs:
         ruby: ['3.4', '4.0']
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install SDL2 dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -62,9 +55,7 @@ jobs:
           gem install native_audio-*.gem
 
       - name: Verify gem loads
-        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'; exit 0"
-        env:
-          SDL_AUDIODRIVER: dummy
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
 
   build-windows:
     runs-on: windows-latest
@@ -89,6 +80,4 @@ jobs:
           gem install native_audio-*.gem
 
       - name: Verify gem loads
-        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'; exit 0"
-        env:
-          SDL_AUDIODRIVER: dummy
+        run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
