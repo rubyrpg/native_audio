@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative './audio'
+
+Audio.init
 sleep 5
 
 module NativeAudio

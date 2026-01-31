@@ -278,15 +278,16 @@ VALUE audio_set_pos(VALUE self, VALUE channel_id, VALUE angle, VALUE distance)
 }
 
 // ============================================================================
-// Ruby Module Setup
+// Engine Initialization
 // ============================================================================
 
-void Init_audio(void)
+// Audio.init - Initialize the audio engine
+VALUE audio_init(VALUE self)
 {
-    for (int i = 0; i < MAX_SOUNDS; i++) sounds[i] = NULL;
-    for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = NULL;
+    if (engine_initialized) {
+        return Qnil;
+    }
 
-    // Initialize audio engine
     // Check for null driver (for CI environments without audio devices)
     // Usage: NATIVE_AUDIO_DRIVER=null ruby script.rb
     const char *driver = getenv("NATIVE_AUDIO_DRIVER");
@@ -300,7 +301,7 @@ void Init_audio(void)
         ma_result ctx_result = ma_context_init(backends, 1, NULL, &context);
         if (ctx_result != MA_SUCCESS) {
             rb_raise(rb_eRuntimeError, "Failed to initialize null audio context");
-            return;
+            return Qnil;
         }
         context_initialized = 1;
         using_null_backend = 1;
@@ -315,14 +316,28 @@ void Init_audio(void)
             context_initialized = 0;
         }
         rb_raise(rb_eRuntimeError, "Failed to initialize audio engine");
-        return;
+        return Qnil;
     }
 
     engine_initialized = 1;
     rb_set_end_proc(cleanup_audio, Qnil);
 
-    // Define Ruby module
+    return Qnil;
+}
+
+// ============================================================================
+// Ruby Module Setup
+// ============================================================================
+
+void Init_audio(void)
+{
+    for (int i = 0; i < MAX_SOUNDS; i++) sounds[i] = NULL;
+    for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = NULL;
+
     VALUE mAudio = rb_define_module("Audio");
+
+    // Initialization
+    rb_define_singleton_method(mAudio, "init", audio_init, 0);
 
     // Loading
     rb_define_singleton_method(mAudio, "load", audio_load, 1);
