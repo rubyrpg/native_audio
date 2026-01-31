@@ -10,6 +10,7 @@ jobs:
   build-macos:
     runs-on: macos-latest
     strategy:
+      fail-fast: false
       matrix:
         ruby: ['3.4', '4.0']
     steps:
@@ -35,6 +36,7 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         ruby: ['3.4', '4.0']
     steps:
@@ -60,6 +62,7 @@ jobs:
   build-windows:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         ruby: ['3.4', '4.0']
     steps:
