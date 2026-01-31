@@ -32,7 +32,7 @@ jobs:
       - name: Build and install gem
         run: |
           gem build native_audio.gemspec
-          gem install native_audio-*.gem
+          gem install native_audio-0.3.0.gem
 
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
@@ -58,7 +58,7 @@ jobs:
       - name: Build and install gem
         run: |
           gem build native_audio.gemspec
-          gem install native_audio-*.gem
+          gem install native_audio-0.3.0.gem
 
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
@@ -84,7 +84,7 @@ jobs:
       - name: Build and install gem
         run: |
           gem build native_audio.gemspec
-          gem install native_audio-*.gem
+          gem install native_audio-0.3.0.gem
 
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
