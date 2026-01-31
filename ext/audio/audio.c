@@ -24,6 +24,7 @@ static ma_sound *channels[MAX_CHANNELS];  // Playback instances
 static int sound_count = 0;
 static int engine_initialized = 0;
 static int context_initialized = 0;
+static int using_null_backend = 0;
 
 // ============================================================================
 // Cleanup (called on Ruby exit)
@@ -65,23 +66,36 @@ static void cleanup_audio(VALUE unused)
         }
     }
 
-    fprintf(stderr, "[native_audio] uninitializing engine...\n");
-    fflush(stderr);
-
-    ma_engine_uninit(&engine);
-    engine_initialized = 0;
-
-    fprintf(stderr, "[native_audio] engine uninitialized\n");
-    fflush(stderr);
-
-    if (context_initialized) {
-        fprintf(stderr, "[native_audio] uninitializing context...\n");
+    // On Windows, ma_engine_uninit crashes with the null backend
+    // Since null backend has no real resources, we can skip cleanup
+#ifdef _WIN32
+    if (using_null_backend) {
+        fprintf(stderr, "[native_audio] skipping engine uninit (null backend on Windows)\n");
         fflush(stderr);
-        ma_context_uninit(&context);
+        engine_initialized = 0;
         context_initialized = 0;
-        fprintf(stderr, "[native_audio] context uninitialized\n");
+    } else {
+#endif
+        fprintf(stderr, "[native_audio] uninitializing engine...\n");
         fflush(stderr);
+
+        ma_engine_uninit(&engine);
+        engine_initialized = 0;
+
+        fprintf(stderr, "[native_audio] engine uninitialized\n");
+        fflush(stderr);
+
+        if (context_initialized) {
+            fprintf(stderr, "[native_audio] uninitializing context...\n");
+            fflush(stderr);
+            ma_context_uninit(&context);
+            context_initialized = 0;
+            fprintf(stderr, "[native_audio] context uninitialized\n");
+            fflush(stderr);
+        }
+#ifdef _WIN32
     }
+#endif
 
     fprintf(stderr, "[native_audio] cleanup complete\n");
     fflush(stderr);
@@ -124,6 +138,7 @@ static void ensure_engine_initialized(void)
             return;
         }
         context_initialized = 1;
+        using_null_backend = 1;
         config.pContext = &context;
         fprintf(stderr, "[native_audio] null backend context ready\n");
         fflush(stderr);
