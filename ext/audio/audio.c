@@ -13,6 +13,63 @@ static ma_sound *channels[MAX_CHANNELS];
 static int sound_count = 0;
 static int engine_initialized = 0;
 
+static void cleanup_audio(VALUE unused)
+{
+    (void)unused;  // Silence unused parameter warning
+
+    if (!engine_initialized) return;
+
+    // Stop and clean up all channels first
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] != NULL) {
+            ma_sound_stop(channels[i]);
+            ma_sound_uninit(channels[i]);
+            free(channels[i]);
+            channels[i] = NULL;
+        }
+    }
+
+    // Stop and clean up all loaded sounds
+    for (int i = 0; i < sound_count; i++) {
+        if (sounds[i] != NULL) {
+            ma_sound_stop(sounds[i]);
+            ma_sound_uninit(sounds[i]);
+            free(sounds[i]);
+            sounds[i] = NULL;
+        }
+    }
+
+    // Uninitialize the engine
+    ma_engine_uninit(&engine);
+    engine_initialized = 0;
+}
+
+static void ensure_engine_initialized(void)
+{
+    if (engine_initialized) return;
+
+    ma_engine_config config = ma_engine_config_init();
+    config.listenerCount = 1;
+
+    ma_result result = ma_engine_init(&config, &engine);
+    if (result != MA_SUCCESS) {
+        rb_raise(rb_eRuntimeError, "Failed to initialize audio engine");
+        return;
+    }
+
+    engine_initialized = 1;
+
+    // Use Ruby's at_exit mechanism instead of C's atexit
+    // This is more reliable on Windows
+    rb_set_end_proc(cleanup_audio, Qnil);
+}
+
+VALUE audio_init(VALUE self)
+{
+    ensure_engine_initialized();
+    return Qnil;
+}
+
 VALUE audio_load(VALUE self, VALUE file)
 {
     const char *path = StringValueCStr(file);
@@ -54,6 +111,7 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
 
     // Clean up existing sound on this channel
     if (channels[channel] != NULL) {
+        ma_sound_stop(channels[channel]);
         ma_sound_uninit(channels[channel]);
         free(channels[channel]);
         channels[channel] = NULL;
@@ -191,55 +249,15 @@ VALUE audio_set_pos(VALUE self, VALUE channel_id, VALUE angle, VALUE distance)
     return Qnil;
 }
 
-static void cleanup_audio(void)
-{
-    if (!engine_initialized) return;
-
-    // Clean up channels
-    for (int i = 0; i < MAX_CHANNELS; i++) {
-        if (channels[i] != NULL) {
-            ma_sound_uninit(channels[i]);
-            free(channels[i]);
-            channels[i] = NULL;
-        }
-    }
-
-    // Clean up loaded sounds
-    for (int i = 0; i < sound_count; i++) {
-        if (sounds[i] != NULL) {
-            ma_sound_uninit(sounds[i]);
-            free(sounds[i]);
-            sounds[i] = NULL;
-        }
-    }
-
-    ma_engine_uninit(&engine);
-    engine_initialized = 0;
-}
-
-void Init_audio()
+void Init_audio(void)
 {
     // Initialize arrays
     for (int i = 0; i < MAX_SOUNDS; i++) sounds[i] = NULL;
     for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = NULL;
 
-    // Initialize miniaudio engine with 3D audio support
-    ma_engine_config config = ma_engine_config_init();
-    config.listenerCount = 1;
-
-    ma_result result = ma_engine_init(&config, &engine);
-    if (result != MA_SUCCESS) {
-        rb_raise(rb_eRuntimeError, "Failed to initialize audio engine");
-        return;
-    }
-
-    engine_initialized = 1;
-
-    // Register cleanup on exit
-    atexit(cleanup_audio);
-
     // Define Ruby module and methods
     VALUE mAudio = rb_define_module("Audio");
+    rb_define_singleton_method(mAudio, "init", audio_init, 0);
     rb_define_singleton_method(mAudio, "load", audio_load, 1);
     rb_define_singleton_method(mAudio, "duration", audio_duration, 1);
     rb_define_singleton_method(mAudio, "play", audio_play, 2);

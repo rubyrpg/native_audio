@@ -2,6 +2,8 @@
 
 require_relative './audio'
 
+Audio.init
+
 module NativeAudio
   class Clip
     attr_reader :clip
