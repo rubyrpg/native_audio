@@ -1,14 +1,25 @@
 # frozen_string_literal: true
 
 require_relative './audio'
+require_relative './dummy_audio'
+
+Audio.init unless ENV['DUMMY_AUDIO_BACKEND'] == 'true'
 
 module NativeAudio
+  def self.audio_driver
+    ENV['DUMMY_AUDIO_BACKEND'] == 'true' ? DummyAudio : Audio
+  end
+
   class Clip
     attr_reader :clip
 
     def initialize(path)
       @path = path
-      @clip = Audio.load(path)
+      @clip = NativeAudio.audio_driver.load(path)
+    end
+
+    def duration
+      NativeAudio.audio_driver.duration(@clip)
     end
   end
 
@@ -20,27 +31,31 @@ module NativeAudio
     end
 
     def play
-      Audio.play(@channel, @clip.clip)
+      NativeAudio.audio_driver.play(@channel, @clip.clip)
     end
 
     def stop
-      Audio.stop(@channel)
+      NativeAudio.audio_driver.stop(@channel)
     end
 
     def pause
-      Audio.pause(@channel)
+      NativeAudio.audio_driver.pause(@channel)
     end
 
     def resume
-      Audio.resume(@channel)
+      NativeAudio.audio_driver.resume(@channel)
     end
 
     def set_pos(angle, distance)
-      Audio.set_pos(@channel, angle, distance)
+      NativeAudio.audio_driver.set_pos(@channel, angle, distance)
     end
 
     def set_volume(volume)
-      Audio.set_volume(@channel, volume)
+      NativeAudio.audio_driver.set_volume(@channel, volume)
+    end
+
+    def set_pitch(pitch)
+      NativeAudio.audio_driver.set_pitch(@channel, pitch)
     end
 
     def self.channels
