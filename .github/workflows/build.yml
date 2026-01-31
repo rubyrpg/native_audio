@@ -37,7 +37,7 @@ jobs:
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
-          NATIVE_AUDIO_DRIVER: null
+          NATIVE_AUDIO_DRIVER: "null"
 
   build-ubuntu:
     runs-on: ubuntu-latest
@@ -65,7 +65,7 @@ jobs:
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
-          NATIVE_AUDIO_DRIVER: null
+          NATIVE_AUDIO_DRIVER: "null"
 
   build-windows:
     runs-on: windows-latest
@@ -93,4 +93,4 @@ jobs:
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
-          NATIVE_AUDIO_DRIVER: null
+          NATIVE_AUDIO_DRIVER: "null"
