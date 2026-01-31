@@ -1,25 +1,17 @@
 require 'mkmf'
 
-# Detect platform
-PLATFORM = case RUBY_PLATFORM
-when /darwin/ then :macos
-when /linux/  then :linux
-when /mingw/  then :windows
-end
+# miniaudio linking requirements per platform:
+# - macOS:   CoreFoundation, CoreAudio, AudioToolbox frameworks
+# - Linux:   pthread, dl, m (math)
+# - Windows: uses native APIs via runtime linking, no extra libs needed
 
-# miniaudio is a single-header library that uses native audio APIs:
-# - macOS: CoreAudio (auto-linked)
-# - Windows: Native APIs (auto-linked)
-# - Linux: Needs pthread, math, dl
-
-case PLATFORM
-when :macos
-  # CoreAudio frameworks are auto-detected by miniaudio
+case RUBY_PLATFORM
+when /darwin/
   $LDFLAGS << " -framework CoreFoundation -framework CoreAudio -framework AudioToolbox "
-when :linux
-  $LDFLAGS << " -lpthread -lm -ldl "
-when :windows
-  # Windows uses native APIs, no extra linking needed
+when /linux/
+  $LDFLAGS << " -ldl -lpthread -lm "
+when /mingw|mswin/
+  # Windows uses runtime linking to native audio APIs
 end
 
 create_makefile('audio')
