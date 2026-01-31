@@ -5,7 +5,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['max.hatfull@gmail.com']
   spec.summary       = 'A simple audio library for Ruby'
   spec.description   = 'A simple audio library for Ruby'
-  spec.files         = Dir['ext/**/*', 'lib/**/*', 'assets/**/*']
+  spec.files         = Dir['ext/**/*', 'lib/**/*']
   spec.extensions    = ['ext/audio/extconf.rb']
   spec.homepage      = 'https://github.com/rubyrpg/native_audio'
   spec.license       = 'MIT'
