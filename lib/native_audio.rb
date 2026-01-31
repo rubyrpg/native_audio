@@ -1,9 +1,21 @@
 # frozen_string_literal: true
 
+$stderr.puts "[native_audio.rb] requiring audio extension..."
+$stderr.flush
+
 require_relative './audio'
 
-Audio.init
+$stderr.puts "[native_audio.rb] audio extension loaded"
+$stderr.flush
 sleep 5
+$stderr.puts "[native_audio.rb] calling Audio.init..."
+$stderr.flush
+Audio.init
+$stderr.puts "[native_audio.rb] sleeping again..."
+$stderr.flush
+sleep 5
+$stderr.puts "[native_audio.rb] Audio.init complete, defining module..."
+$stderr.flush
 
 module NativeAudio
   class Clip
@@ -59,3 +71,6 @@ module NativeAudio
     end
   end
 end
+
+$stderr.puts "[native_audio.rb] module defined, require complete"
+$stderr.flush
