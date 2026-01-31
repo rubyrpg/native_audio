@@ -135,6 +135,39 @@ VALUE audio_set_volume(VALUE self, VALUE channel_id, VALUE volume)
     return Qnil;
 }
 
+VALUE audio_set_pitch(VALUE self, VALUE channel_id, VALUE pitch)
+{
+    int channel = NUM2INT(channel_id);
+    float p = (float)NUM2DBL(pitch);
+
+    if (channel < 0 || channel >= MAX_CHANNELS || channels[channel] == NULL) {
+        return Qnil;
+    }
+
+    // 1.0 = normal, 0.5 = octave down, 2.0 = octave up
+    ma_sound_set_pitch(channels[channel], p);
+
+    return Qnil;
+}
+
+VALUE audio_duration(VALUE self, VALUE clip)
+{
+    int clip_id = NUM2INT(clip);
+
+    if (clip_id < 0 || clip_id >= sound_count || sounds[clip_id] == NULL) {
+        rb_raise(rb_eArgError, "Invalid clip ID: %d", clip_id);
+        return Qnil;
+    }
+
+    float length;
+    ma_result result = ma_sound_get_length_in_seconds(sounds[clip_id], &length);
+    if (result != MA_SUCCESS) {
+        return Qnil;
+    }
+
+    return rb_float_new(length);
+}
+
 VALUE audio_set_pos(VALUE self, VALUE channel_id, VALUE angle, VALUE distance)
 {
     int channel = NUM2INT(channel_id);
@@ -208,10 +241,12 @@ void Init_audio()
     // Define Ruby module and methods
     VALUE mAudio = rb_define_module("Audio");
     rb_define_singleton_method(mAudio, "load", audio_load, 1);
+    rb_define_singleton_method(mAudio, "duration", audio_duration, 1);
     rb_define_singleton_method(mAudio, "play", audio_play, 2);
     rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
     rb_define_singleton_method(mAudio, "stop", audio_stop, 1);
     rb_define_singleton_method(mAudio, "pause", audio_pause, 1);
     rb_define_singleton_method(mAudio, "resume", audio_resume, 1);
     rb_define_singleton_method(mAudio, "set_volume", audio_set_volume, 2);
+    rb_define_singleton_method(mAudio, "set_pitch", audio_set_pitch, 2);
 }

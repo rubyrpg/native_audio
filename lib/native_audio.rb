@@ -10,6 +10,10 @@ module NativeAudio
       @path = path
       @clip = Audio.load(path)
     end
+
+    def duration
+      Audio.duration(@clip)
+    end
   end
 
   class AudioSource
@@ -41,6 +45,10 @@ module NativeAudio
 
     def set_volume(volume)
       Audio.set_volume(@channel, volume)
+    end
+
+    def set_pitch(pitch)
+      Audio.set_pitch(@channel, pitch)
     end
 
     def self.channels
