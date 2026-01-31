@@ -34,19 +34,9 @@ static void cleanup_audio(VALUE unused)
 {
     (void)unused;
 
-    fprintf(stderr, "[native_audio] cleanup_audio called\n");
-    fprintf(stderr, "[native_audio] engine_initialized=%d, context_initialized=%d, using_null_backend=%d\n",
-            engine_initialized, context_initialized, using_null_backend);
-    fflush(stderr);
-
     if (!engine_initialized) {
-        fprintf(stderr, "[native_audio] engine not initialized, skipping cleanup\n");
-        fflush(stderr);
         return;
     }
-
-    fprintf(stderr, "[native_audio] cleaning up channels...\n");
-    fflush(stderr);
 
     // Stop and clean up all channels
     for (int i = 0; i < MAX_CHANNELS; i++) {
@@ -58,9 +48,6 @@ static void cleanup_audio(VALUE unused)
         }
     }
 
-    fprintf(stderr, "[native_audio] cleaning up sounds...\n");
-    fflush(stderr);
-
     // Stop and clean up all loaded sounds
     for (int i = 0; i < sound_count; i++) {
         if (sounds[i] != NULL) {
@@ -71,47 +58,24 @@ static void cleanup_audio(VALUE unused)
         }
     }
 
-    fprintf(stderr, "[native_audio] sounds cleaned up\n");
-    fflush(stderr);
-
     // On Windows, ma_engine_uninit crashes with the null backend
     // Since null backend has no real resources, we can skip cleanup
 #ifdef _WIN32
-    fprintf(stderr, "[native_audio] Windows detected\n");
-    fflush(stderr);
     if (using_null_backend) {
-        fprintf(stderr, "[native_audio] skipping engine uninit (null backend on Windows)\n");
-        fflush(stderr);
         engine_initialized = 0;
         context_initialized = 0;
-        fprintf(stderr, "[native_audio] cleanup complete (skipped engine uninit)\n");
-        fflush(stderr);
         return;
     }
 #endif
 
-    fprintf(stderr, "[native_audio] uninitializing engine...\n");
-    fflush(stderr);
-
     ma_engine_uninit(&engine);
     engine_initialized = 0;
 
-    fprintf(stderr, "[native_audio] engine uninitialized\n");
-    fflush(stderr);
-
     if (context_initialized) {
-        fprintf(stderr, "[native_audio] uninitializing context...\n");
-        fflush(stderr);
         ma_context_uninit(&context);
         context_initialized = 0;
-        fprintf(stderr, "[native_audio] context uninitialized\n");
-        fflush(stderr);
     }
-
-    fprintf(stderr, "[native_audio] cleanup complete\n");
-    fflush(stderr);
 }
-
 
 // ============================================================================
 // Audio Loading
@@ -318,38 +282,21 @@ VALUE audio_set_pos(VALUE self, VALUE channel_id, VALUE angle, VALUE distance)
 // Audio.init - Initialize the audio engine
 VALUE audio_init(VALUE self)
 {
-    fprintf(stderr, "[native_audio] audio_init called\n");
-    fflush(stderr);
-
     if (engine_initialized) {
-        fprintf(stderr, "[native_audio] already initialized, returning\n");
-        fflush(stderr);
         return Qnil;
     }
 
     // Check for null driver (for CI environments without audio devices)
     // Usage: NATIVE_AUDIO_DRIVER=null ruby script.rb
     const char *driver = getenv("NATIVE_AUDIO_DRIVER");
-    fprintf(stderr, "[native_audio] NATIVE_AUDIO_DRIVER=%s\n", driver ? driver : "(not set)");
-    fflush(stderr);
-
     int use_null = (driver != NULL && strcmp(driver, "null") == 0);
-    fprintf(stderr, "[native_audio] use_null=%d\n", use_null);
-    fflush(stderr);
 
     ma_engine_config config = ma_engine_config_init();
     config.listenerCount = 1;
 
     if (use_null) {
-        fprintf(stderr, "[native_audio] initializing null backend context...\n");
-        fflush(stderr);
-
         ma_backend backends[] = { ma_backend_null };
         ma_result ctx_result = ma_context_init(backends, 1, NULL, &context);
-
-        fprintf(stderr, "[native_audio] ma_context_init returned %d\n", ctx_result);
-        fflush(stderr);
-
         if (ctx_result != MA_SUCCESS) {
             rb_raise(rb_eRuntimeError, "Failed to initialize null audio context");
             return Qnil;
@@ -357,18 +304,9 @@ VALUE audio_init(VALUE self)
         context_initialized = 1;
         using_null_backend = 1;
         config.pContext = &context;
-
-        fprintf(stderr, "[native_audio] null backend context ready, using_null_backend=%d\n", using_null_backend);
-        fflush(stderr);
     }
 
-    fprintf(stderr, "[native_audio] calling ma_engine_init...\n");
-    fflush(stderr);
-
     ma_result result = ma_engine_init(&config, &engine);
-
-    fprintf(stderr, "[native_audio] ma_engine_init returned %d\n", result);
-    fflush(stderr);
 
     if (result != MA_SUCCESS) {
         if (context_initialized) {
@@ -380,14 +318,7 @@ VALUE audio_init(VALUE self)
     }
 
     engine_initialized = 1;
-
-    fprintf(stderr, "[native_audio] registering cleanup with rb_set_end_proc...\n");
-    fflush(stderr);
-
     rb_set_end_proc(cleanup_audio, Qnil);
-
-    fprintf(stderr, "[native_audio] audio_init complete\n");
-    fflush(stderr);
 
     return Qnil;
 }
@@ -398,9 +329,6 @@ VALUE audio_init(VALUE self)
 
 void Init_audio(void)
 {
-    fprintf(stderr, "[native_audio] Init_audio called\n");
-    fflush(stderr);
-
     for (int i = 0; i < MAX_SOUNDS; i++) sounds[i] = NULL;
     for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = NULL;
 
@@ -423,7 +351,4 @@ void Init_audio(void)
     rb_define_singleton_method(mAudio, "set_volume", audio_set_volume, 2);
     rb_define_singleton_method(mAudio, "set_pitch", audio_set_pitch, 2);
     rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
-
-    fprintf(stderr, "[native_audio] Init_audio complete\n");
-    fflush(stderr);
 }

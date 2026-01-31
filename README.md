@@ -47,6 +47,26 @@ audio_source.set_volume(64)
 audio_source.stop
 ```
 
+## Environment Variables
+
+### `NATIVE_AUDIO_DRIVER`
+
+Set `NATIVE_AUDIO_DRIVER=null` to use miniaudio's null backend. This initializes the audio engine but outputs no sound - useful for CI/testing on systems without audio hardware.
+
+```bash
+NATIVE_AUDIO_DRIVER=null ruby your_script.rb
+```
+
+### `DUMMY_AUDIO_BACKEND`
+
+Set `DUMMY_AUDIO_BACKEND=true` to bypass miniaudio entirely and use a pure Ruby dummy backend. The C extension still loads (validating it compiles correctly), but no audio engine is initialized and all audio calls are no-ops.
+
+```bash
+DUMMY_AUDIO_BACKEND=true ruby your_script.rb
+```
+
+> **Note:** On Windows Server (e.g., GitHub Actions runners), miniaudio's null backend crashes due to threading issues in headless environments. Use `DUMMY_AUDIO_BACKEND=true` instead. macOS and Linux work fine with `NATIVE_AUDIO_DRIVER=null`.
+
 ## Development
 
 ```bash

@@ -93,4 +93,4 @@ jobs:
       - name: Verify gem loads
         run: ruby -e "require 'native_audio'; puts 'native_audio loaded successfully'"
         env:
-          NATIVE_AUDIO_DRIVER: "null"
+          DUMMY_AUDIO_BACKEND: "true"
