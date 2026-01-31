@@ -1,5 +1,7 @@
 #include <ruby.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
@@ -8,10 +10,12 @@
 #define MAX_CHANNELS 1024
 
 static ma_engine engine;
+static ma_context context;
 static ma_sound *sounds[MAX_SOUNDS];
 static ma_sound *channels[MAX_CHANNELS];
 static int sound_count = 0;
 static int engine_initialized = 0;
+static int context_initialized = 0;
 
 static void cleanup_audio(VALUE unused)
 {
@@ -42,17 +46,43 @@ static void cleanup_audio(VALUE unused)
     // Uninitialize the engine
     ma_engine_uninit(&engine);
     engine_initialized = 0;
+
+    // Uninitialize context if we created one (for null backend)
+    if (context_initialized) {
+        ma_context_uninit(&context);
+        context_initialized = 0;
+    }
 }
 
 static void ensure_engine_initialized(void)
 {
     if (engine_initialized) return;
 
+    // Check for null/dummy driver (useful for CI without audio devices)
+    const char *driver = getenv("NATIVE_AUDIO_DRIVER");
+    int use_null = (driver != NULL && strcmp(driver, "null") == 0);
+
     ma_engine_config config = ma_engine_config_init();
     config.listenerCount = 1;
 
+    if (use_null) {
+        // Initialize context with null backend only
+        ma_backend backends[] = { ma_backend_null };
+        ma_result ctx_result = ma_context_init(backends, 1, NULL, &context);
+        if (ctx_result != MA_SUCCESS) {
+            rb_raise(rb_eRuntimeError, "Failed to initialize null audio context");
+            return;
+        }
+        context_initialized = 1;
+        config.pContext = &context;
+    }
+
     ma_result result = ma_engine_init(&config, &engine);
     if (result != MA_SUCCESS) {
+        if (context_initialized) {
+            ma_context_uninit(&context);
+            context_initialized = 0;
+        }
         rb_raise(rb_eRuntimeError, "Failed to initialize audio engine");
         return;
     }
