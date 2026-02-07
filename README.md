@@ -1,6 +1,6 @@
 # What is native_audio?
 
-Native audio is a thin wrapper around miniaudio for simple audio playback from Ruby.
+Native audio is a thin wrapper around miniaudio for simple audio playback from Ruby, with built-in support for delay and reverb effects.
 
 ## Installation
 
@@ -25,26 +25,88 @@ clip = NativeAudio::Clip.new('path/to/sound.wav')
 clip.duration  # => seconds
 
 # Create an audio source to manage playback
-audio_source = NativeAudio::AudioSource.new(clip)
+source = NativeAudio::AudioSource.new(clip)
 
 # Play the clip
-audio_source.play
+source.play
 
 # Pause and resume
-audio_source.pause
-audio_source.resume
+source.pause
+source.resume
 
 # Set pitch (1.0 = normal, 0.5 = octave down, 2.0 = octave up)
-audio_source.set_pitch(1.5)
+source.set_pitch(1.5)
 
 # Set position relative to listener (angle: 0-360, distance: 0-255)
-audio_source.set_pos(90, 200)  # right side, mid distance
+source.set_pos(90, 200)  # right side, mid distance
 
 # Set volume (0-128)
-audio_source.set_volume(64)
+source.set_volume(64)
 
 # Stop the clip
-audio_source.stop
+source.stop
+```
+
+## Effects
+
+Each audio source has a built-in effects chain:
+
+```
+sound ──▶ delay ──▶ reverb ──▶ output
+```
+
+### Delay Taps
+
+Add discrete echo effects with up to 16 taps per source:
+
+```ruby
+source.play
+
+# Add delay taps (returns a DelayTap object)
+tap1 = source.add_delay_tap(time_ms: 200, volume: 0.5)
+tap2 = source.add_delay_tap(time_ms: 400, volume: 0.3)
+
+# Modify taps at runtime
+tap1.volume = 0.4
+tap1.time_ms = 250
+
+# Remove a tap
+tap2.remove
+
+# Query active taps
+source.delay_taps  # => [tap1]
+```
+
+### Reverb
+
+Add room ambience with a Schroeder reverb:
+
+```ruby
+source.play
+
+# Enable reverb with custom settings
+source.set_reverb(
+  room_size: 0.7,  # 0.0 = small room, 1.0 = large hall
+  damping: 0.5,    # 0.0 = bright, 1.0 = muffled
+  wet: 0.4,        # reverb signal level
+  dry: 1.0         # original signal level
+)
+
+# Or just enable with defaults
+source.enable_reverb
+source.enable_reverb(false)  # disable
+```
+
+### Combining Effects
+
+Delay and reverb work together - each echo gets reverb applied:
+
+```ruby
+source.play
+
+# Slapback echo with room reverb
+source.add_delay_tap(time_ms: 150, volume: 0.4)
+source.set_reverb(room_size: 0.5, wet: 0.3, dry: 1.0)
 ```
 
 ## Environment Variables
