@@ -3,24 +3,26 @@
 
 require_relative 'lib/native_audio'
 
-clip = NativeAudio::Clip.new('boom.wav')
+clip = NativeAudio::Clip.new('knock.wav')
+source = NativeAudio::AudioSource.new(clip)
 
-source1 = NativeAudio::AudioSource.new(clip)
-source2 = NativeAudio::AudioSource.new(clip)
+puts "Playing with looping, delay + reverb..."
+source.play
+source.set_looping(true)
 
-puts "Playing first boom (left, low pitch)..."
-source1.play
-source1.set_pos(270, 255)  # left
-source1.set_pitch(0.5)     # low
+# Add a slapback echo
+source.add_delay_tap(time_ms: 200, volume: 0.5)
 
-sleep 3
+# Then reverb processes both original and echo
+source.set_reverb(
+  room_size: 0.7,
+  damping: 0.5,
+  wet: 0.5,
+  dry: 0.5
+)
 
-puts "Playing second boom (right, high pitch)..."
-source2.play
-source2.set_pos(90, 255)   # right
-source2.set_pitch(2.0)     # high
-
-# Wait for both to finish
-sleep clip.duration
+# Play for 5 seconds then stop
+sleep 5.0
+source.stop
 
 puts "Done!"
