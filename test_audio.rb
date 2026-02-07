@@ -3,24 +3,17 @@
 
 require_relative 'lib/native_audio'
 
-clip = NativeAudio::Clip.new('boom.wav')
+clip = NativeAudio::Clip.new('knock.wav')
+source = NativeAudio::AudioSource.new(clip)
 
-source1 = NativeAudio::AudioSource.new(clip)
-source2 = NativeAudio::AudioSource.new(clip)
+puts "Playing with multi-tap delay..."
+source.play
 
-puts "Playing first boom (left, low pitch)..."
-source1.play
-source1.set_pos(270, 255)  # left
-source1.set_pitch(0.5)     # low
+# Add echo-like delay taps
+# tap2 = source.add_delay_tap(time_ms: 25, volume: 0.2)
+# tap3 = source.add_delay_tap(time_ms: 50, volume: 0.2)
+tap4 = source.add_delay_tap(time_ms: 75, volume: 0.3)
 
-sleep 3
-
-puts "Playing second boom (right, high pitch)..."
-source2.play
-source2.set_pos(90, 255)   # right
-source2.set_pitch(2.0)     # high
-
-# Wait for both to finish
-sleep clip.duration
+sleep clip.duration + 0.7
 
 puts "Done!"
