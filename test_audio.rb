@@ -6,14 +6,17 @@ require_relative 'lib/native_audio'
 clip = NativeAudio::Clip.new('knock.wav')
 source = NativeAudio::AudioSource.new(clip)
 
-puts "Playing with multi-tap delay..."
+puts "Playing with Schroeder reverb..."
 source.play
 
-# Add echo-like delay taps
-# tap2 = source.add_delay_tap(time_ms: 25, volume: 0.2)
-# tap3 = source.add_delay_tap(time_ms: 50, volume: 0.2)
-tap4 = source.add_delay_tap(time_ms: 75, volume: 0.3)
+# Enable reverb with room-like settings
+source.set_reverb(
+  room_size: 0.7,  # 0.0 = small, 1.0 = large hall
+  damping: 0.5,    # High freq decay (0 = bright, 1 = muffled)
+  wet: 0.5,        # Reverb level
+  dry: 0.1         # Original signal level
+)
 
-sleep clip.duration + 0.7
+sleep clip.duration + 1.5  # Extra time for reverb tail
 
 puts "Done!"

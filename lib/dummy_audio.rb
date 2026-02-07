@@ -67,4 +67,24 @@ module DummyAudio
   def self.set_delay_tap_time(channel, tap_id, time_ms)
     nil
   end
+
+  def self.enable_reverb(channel, enabled)
+    nil
+  end
+
+  def self.set_reverb_room_size(channel, size)
+    nil
+  end
+
+  def self.set_reverb_damping(channel, damp)
+    nil
+  end
+
+  def self.set_reverb_wet(channel, wet)
+    nil
+  end
+
+  def self.set_reverb_dry(channel, dry)
+    nil
+  end
 end

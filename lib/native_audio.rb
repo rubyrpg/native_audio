@@ -94,6 +94,18 @@ module NativeAudio
       tap
     end
 
+    def enable_reverb(enabled = true)
+      NativeAudio.audio_driver.enable_reverb(@channel, enabled)
+    end
+
+    def set_reverb(room_size: 0.5, damping: 0.3, wet: 0.3, dry: 1.0)
+      NativeAudio.audio_driver.enable_reverb(@channel, true)
+      NativeAudio.audio_driver.set_reverb_room_size(@channel, room_size)
+      NativeAudio.audio_driver.set_reverb_damping(@channel, damping)
+      NativeAudio.audio_driver.set_reverb_wet(@channel, wet)
+      NativeAudio.audio_driver.set_reverb_dry(@channel, dry)
+    end
+
     def delay_taps
       @delay_taps
     end

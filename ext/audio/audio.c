@@ -217,6 +217,238 @@ static void multi_tap_delay_set_time(multi_tap_delay_node *pNode, int tap_id, fl
 }
 
 // ============================================================================
+// Schroeder Reverb Node
+// ============================================================================
+
+#define NUM_COMBS 4
+#define NUM_ALLPASSES 2
+
+typedef struct {
+    float *buffer;
+    ma_uint32 size;
+    ma_uint32 pos;
+} delay_line;
+
+typedef struct {
+    ma_node_base base;
+    ma_uint32 channels;
+    ma_uint32 sample_rate;
+
+    // 4 parallel comb filters per audio channel
+    delay_line combs[2][NUM_COMBS];  // [audio_channel][comb_index]
+    float comb_feedback;
+    float comb_damp;
+    float comb_damp_prev[2][NUM_COMBS];
+
+    // 2 series allpass filters per audio channel
+    delay_line allpasses[2][NUM_ALLPASSES];
+    float allpass_feedback;
+
+    // Mix control
+    float wet;
+    float dry;
+    float room_size;  // Scales comb delays
+    ma_bool32 enabled;
+} reverb_node;
+
+static reverb_node *reverb_nodes[MAX_CHANNELS];
+
+// Base delay times in seconds (Schroeder-style, prime-ish ratios)
+static const float COMB_DELAYS[NUM_COMBS] = { 0.0297f, 0.0371f, 0.0411f, 0.0437f };
+static const float ALLPASS_DELAYS[NUM_ALLPASSES] = { 0.005f, 0.0017f };
+
+static void delay_line_init(delay_line *dl, ma_uint32 size)
+{
+    dl->size = size;
+    dl->pos = 0;
+    dl->buffer = (float *)calloc(size, sizeof(float));
+}
+
+static void delay_line_free(delay_line *dl)
+{
+    if (dl->buffer) {
+        free(dl->buffer);
+        dl->buffer = NULL;
+    }
+}
+
+static inline float delay_line_read(delay_line *dl)
+{
+    return dl->buffer[dl->pos];
+}
+
+static inline void delay_line_write(delay_line *dl, float value)
+{
+    dl->buffer[dl->pos] = value;
+    dl->pos = (dl->pos + 1) % dl->size;
+}
+
+// Comb filter: output = buffer[pos], then write input + feedback * output (with damping)
+static inline float comb_process(delay_line *dl, float input, float feedback, float damp, float *damp_prev)
+{
+    float output = delay_line_read(dl);
+    // Low-pass filter on feedback for damping (high freq decay faster)
+    *damp_prev = output * (1.0f - damp) + (*damp_prev) * damp;
+    delay_line_write(dl, input + feedback * (*damp_prev));
+    return output;
+}
+
+// Allpass filter: output = -g*input + buffer[pos], write input + g*buffer[pos]
+static inline float allpass_process(delay_line *dl, float input, float feedback)
+{
+    float buffered = delay_line_read(dl);
+    float output = buffered - feedback * input;
+    delay_line_write(dl, input + feedback * buffered);
+    return output;
+}
+
+static void reverb_process(ma_node *pNode, const float **ppFramesIn, ma_uint32 *pFrameCountIn,
+                           float **ppFramesOut, ma_uint32 *pFrameCountOut)
+{
+    reverb_node *node = (reverb_node *)pNode;
+    const float *pFramesIn = ppFramesIn[0];
+    float *pFramesOut = ppFramesOut[0];
+    ma_uint32 frameCount = *pFrameCountOut;
+    ma_uint32 numChannels = node->channels;
+
+    if (!node->enabled) {
+        // Bypass: copy input to output
+        memcpy(pFramesOut, pFramesIn, frameCount * numChannels * sizeof(float));
+        return;
+    }
+
+    for (ma_uint32 iFrame = 0; iFrame < frameCount; iFrame++) {
+        for (ma_uint32 iChannel = 0; iChannel < numChannels && iChannel < 2; iChannel++) {
+            ma_uint32 sampleIndex = iFrame * numChannels + iChannel;
+            float input = pFramesIn[sampleIndex];
+
+            // Sum of parallel comb filters
+            float combSum = 0.0f;
+            for (int c = 0; c < NUM_COMBS; c++) {
+                combSum += comb_process(&node->combs[iChannel][c], input,
+                                        node->comb_feedback, node->comb_damp,
+                                        &node->comb_damp_prev[iChannel][c]);
+            }
+            combSum *= 0.25f;  // Average the 4 combs
+
+            // Series allpass filters
+            float allpassOut = combSum;
+            for (int a = 0; a < NUM_ALLPASSES; a++) {
+                allpassOut = allpass_process(&node->allpasses[iChannel][a],
+                                             allpassOut, node->allpass_feedback);
+            }
+
+            // Mix dry and wet
+            pFramesOut[sampleIndex] = input * node->dry + allpassOut * node->wet;
+        }
+
+        // Handle mono->stereo or more channels by copying
+        for (ma_uint32 iChannel = 2; iChannel < numChannels; iChannel++) {
+            ma_uint32 sampleIndex = iFrame * numChannels + iChannel;
+            pFramesOut[sampleIndex] = pFramesIn[sampleIndex];
+        }
+    }
+}
+
+static ma_node_vtable g_reverb_vtable = {
+    reverb_process,
+    NULL,
+    1,
+    1,
+    0
+};
+
+static ma_result reverb_init(reverb_node *pNode, ma_node_graph *pNodeGraph,
+                             ma_uint32 sampleRate, ma_uint32 numChannels)
+{
+    if (pNode == NULL) {
+        return MA_INVALID_ARGS;
+    }
+
+    memset(pNode, 0, sizeof(*pNode));
+    pNode->sample_rate = sampleRate;
+    pNode->channels = numChannels;
+    pNode->enabled = MA_FALSE;
+
+    // Default parameters
+    pNode->room_size = 0.5f;
+    pNode->comb_feedback = 0.7f;
+    pNode->comb_damp = 0.3f;
+    pNode->allpass_feedback = 0.5f;
+    pNode->wet = 0.3f;
+    pNode->dry = 1.0f;
+
+    // Initialize delay lines for up to 2 audio channels
+    ma_uint32 chans = numChannels < 2 ? numChannels : 2;
+    for (ma_uint32 ch = 0; ch < chans; ch++) {
+        for (int c = 0; c < NUM_COMBS; c++) {
+            ma_uint32 delaySize = (ma_uint32)(COMB_DELAYS[c] * pNode->room_size * 2.0f * sampleRate);
+            if (delaySize < 1) delaySize = 1;
+            delay_line_init(&pNode->combs[ch][c], delaySize);
+        }
+        for (int a = 0; a < NUM_ALLPASSES; a++) {
+            ma_uint32 delaySize = (ma_uint32)(ALLPASS_DELAYS[a] * sampleRate);
+            if (delaySize < 1) delaySize = 1;
+            delay_line_init(&pNode->allpasses[ch][a], delaySize);
+        }
+    }
+
+    // Set up node
+    ma_uint32 channelsArray[1] = { numChannels };
+    ma_node_config nodeConfig = ma_node_config_init();
+    nodeConfig.vtable = &g_reverb_vtable;
+    nodeConfig.pInputChannels = channelsArray;
+    nodeConfig.pOutputChannels = channelsArray;
+
+    return ma_node_init(pNodeGraph, &nodeConfig, NULL, &pNode->base);
+}
+
+static void reverb_uninit(reverb_node *pNode)
+{
+    if (pNode == NULL) return;
+
+    ma_node_uninit(&pNode->base, NULL);
+
+    for (int ch = 0; ch < 2; ch++) {
+        for (int c = 0; c < NUM_COMBS; c++) {
+            delay_line_free(&pNode->combs[ch][c]);
+        }
+        for (int a = 0; a < NUM_ALLPASSES; a++) {
+            delay_line_free(&pNode->allpasses[ch][a]);
+        }
+    }
+}
+
+static void reverb_set_enabled(reverb_node *pNode, ma_bool32 enabled)
+{
+    if (pNode) pNode->enabled = enabled;
+}
+
+static void reverb_set_room_size(reverb_node *pNode, float size)
+{
+    if (pNode == NULL) return;
+    pNode->room_size = size;
+    // Note: changing room_size after init would require reallocating buffers
+    // For now, this affects feedback calculation
+    pNode->comb_feedback = 0.6f + size * 0.35f;  // 0.6 to 0.95
+}
+
+static void reverb_set_damping(reverb_node *pNode, float damp)
+{
+    if (pNode) pNode->comb_damp = damp;
+}
+
+static void reverb_set_wet(reverb_node *pNode, float wet)
+{
+    if (pNode) pNode->wet = wet;
+}
+
+static void reverb_set_dry(reverb_node *pNode, float dry)
+{
+    if (pNode) pNode->dry = dry;
+}
+
+// ============================================================================
 // Cleanup (called on Ruby exit)
 // ============================================================================
 
@@ -242,6 +474,13 @@ static void cleanup_audio(VALUE unused)
             multi_tap_delay_uninit(delay_nodes[i]);
             free(delay_nodes[i]);
             delay_nodes[i] = NULL;
+        }
+
+        // Clean up reverb nodes
+        if (reverb_nodes[i] != NULL) {
+            reverb_uninit(reverb_nodes[i]);
+            free(reverb_nodes[i]);
+            reverb_nodes[i] = NULL;
         }
     }
 
@@ -357,6 +596,13 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
         delay_nodes[channel] = NULL;
     }
 
+    // Clean up existing reverb node on this channel
+    if (reverb_nodes[channel] != NULL) {
+        reverb_uninit(reverb_nodes[channel]);
+        free(reverb_nodes[channel]);
+        reverb_nodes[channel] = NULL;
+    }
+
     // Create a copy of the sound for playback (without default attachment)
     ma_sound *playback = (ma_sound *)malloc(sizeof(ma_sound));
     if (playback == NULL) {
@@ -392,13 +638,37 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
         return Qnil;
     }
 
-    // Route: sound -> delay_node -> endpoint
+    // Create reverb node for this channel
+    reverb_node *reverbNode = (reverb_node *)malloc(sizeof(reverb_node));
+    if (reverbNode == NULL) {
+        multi_tap_delay_uninit(delayNode);
+        free(delayNode);
+        ma_sound_uninit(playback);
+        free(playback);
+        rb_raise(rb_eRuntimeError, "Failed to allocate memory for reverb node");
+        return Qnil;
+    }
+
+    result = reverb_init(reverbNode, ma_engine_get_node_graph(&engine), sampleRate, numChannels);
+    if (result != MA_SUCCESS) {
+        free(reverbNode);
+        multi_tap_delay_uninit(delayNode);
+        free(delayNode);
+        ma_sound_uninit(playback);
+        free(playback);
+        rb_raise(rb_eRuntimeError, "Failed to initialize reverb node");
+        return Qnil;
+    }
+
+    // Route: sound -> delay_node -> reverb_node -> endpoint
     // ma_sound has ma_engine_node as first member for node API compatibility
     ma_node *endpoint = ma_engine_get_endpoint(&engine);
-    ma_node_attach_output_bus(&delayNode->base, 0, endpoint, 0);
+    ma_node_attach_output_bus(&reverbNode->base, 0, endpoint, 0);
+    ma_node_attach_output_bus(&delayNode->base, 0, &reverbNode->base, 0);
     ma_node_attach_output_bus((ma_node *)playback, 0, &delayNode->base, 0);
 
     delay_nodes[channel] = delayNode;
+    reverb_nodes[channel] = reverbNode;
     channels[channel] = playback;
     ma_sound_start(playback);
 
@@ -551,6 +821,76 @@ VALUE audio_set_delay_tap_time(VALUE self, VALUE channel_id, VALUE tap_id, VALUE
     return Qnil;
 }
 
+// Audio.enable_reverb(channel, enabled) - Enable/disable reverb
+VALUE audio_enable_reverb(VALUE self, VALUE channel_id, VALUE enabled)
+{
+    int channel = NUM2INT(channel_id);
+    ma_bool32 en = RTEST(enabled) ? MA_TRUE : MA_FALSE;
+
+    if (channel < 0 || channel >= MAX_CHANNELS || reverb_nodes[channel] == NULL) {
+        return Qnil;
+    }
+
+    reverb_set_enabled(reverb_nodes[channel], en);
+    return Qnil;
+}
+
+// Audio.set_reverb_room_size(channel, size) - Set room size (0.0 to 1.0)
+VALUE audio_set_reverb_room_size(VALUE self, VALUE channel_id, VALUE size)
+{
+    int channel = NUM2INT(channel_id);
+    float s = (float)NUM2DBL(size);
+
+    if (channel < 0 || channel >= MAX_CHANNELS || reverb_nodes[channel] == NULL) {
+        return Qnil;
+    }
+
+    reverb_set_room_size(reverb_nodes[channel], s);
+    return Qnil;
+}
+
+// Audio.set_reverb_damping(channel, damp) - Set damping (0.0 to 1.0)
+VALUE audio_set_reverb_damping(VALUE self, VALUE channel_id, VALUE damp)
+{
+    int channel = NUM2INT(channel_id);
+    float d = (float)NUM2DBL(damp);
+
+    if (channel < 0 || channel >= MAX_CHANNELS || reverb_nodes[channel] == NULL) {
+        return Qnil;
+    }
+
+    reverb_set_damping(reverb_nodes[channel], d);
+    return Qnil;
+}
+
+// Audio.set_reverb_wet(channel, wet) - Set wet level (0.0 to 1.0)
+VALUE audio_set_reverb_wet(VALUE self, VALUE channel_id, VALUE wet)
+{
+    int channel = NUM2INT(channel_id);
+    float w = (float)NUM2DBL(wet);
+
+    if (channel < 0 || channel >= MAX_CHANNELS || reverb_nodes[channel] == NULL) {
+        return Qnil;
+    }
+
+    reverb_set_wet(reverb_nodes[channel], w);
+    return Qnil;
+}
+
+// Audio.set_reverb_dry(channel, dry) - Set dry level (0.0 to 1.0)
+VALUE audio_set_reverb_dry(VALUE self, VALUE channel_id, VALUE dry)
+{
+    int channel = NUM2INT(channel_id);
+    float d = (float)NUM2DBL(dry);
+
+    if (channel < 0 || channel >= MAX_CHANNELS || reverb_nodes[channel] == NULL) {
+        return Qnil;
+    }
+
+    reverb_set_dry(reverb_nodes[channel], d);
+    return Qnil;
+}
+
 // Audio.set_pos(channel, angle, distance) - Set 3D position
 // angle: 0=front, 90=right, 180=back, 270=left
 // distance: 0=close, 255=far
@@ -633,6 +973,7 @@ void Init_audio(void)
     for (int i = 0; i < MAX_CHANNELS; i++) {
         channels[i] = NULL;
         delay_nodes[i] = NULL;
+        reverb_nodes[i] = NULL;
     }
 
     VALUE mAudio = rb_define_module("Audio");
@@ -660,4 +1001,11 @@ void Init_audio(void)
     rb_define_singleton_method(mAudio, "remove_delay_tap", audio_remove_delay_tap, 2);
     rb_define_singleton_method(mAudio, "set_delay_tap_volume", audio_set_delay_tap_volume, 3);
     rb_define_singleton_method(mAudio, "set_delay_tap_time", audio_set_delay_tap_time, 3);
+
+    // Reverb
+    rb_define_singleton_method(mAudio, "enable_reverb", audio_enable_reverb, 2);
+    rb_define_singleton_method(mAudio, "set_reverb_room_size", audio_set_reverb_room_size, 2);
+    rb_define_singleton_method(mAudio, "set_reverb_damping", audio_set_reverb_damping, 2);
+    rb_define_singleton_method(mAudio, "set_reverb_wet", audio_set_reverb_wet, 2);
+    rb_define_singleton_method(mAudio, "set_reverb_dry", audio_set_reverb_dry, 2);
 }
