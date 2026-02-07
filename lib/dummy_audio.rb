@@ -49,6 +49,10 @@ module DummyAudio
     nil
   end
 
+  def self.set_looping(channel, looping)
+    nil
+  end
+
   def self.add_delay_tap(channel, time_ms, volume)
     @tap_counts[channel] ||= 0
     tap_id = @tap_counts[channel]

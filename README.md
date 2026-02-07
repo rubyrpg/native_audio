@@ -43,6 +43,9 @@ source.set_pos(90, 200)  # right side, mid distance
 # Set volume (0-128)
 source.set_volume(64)
 
+# Loop playback
+source.set_looping(true)
+
 # Stop the clip
 source.stop
 ```

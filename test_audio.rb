@@ -6,8 +6,9 @@ require_relative 'lib/native_audio'
 clip = NativeAudio::Clip.new('knock.wav')
 source = NativeAudio::AudioSource.new(clip)
 
-puts "Playing with delay + reverb..."
+puts "Playing with looping, delay + reverb..."
 source.play
+source.set_looping(true)
 
 # Add a slapback echo
 source.add_delay_tap(time_ms: 200, volume: 0.5)
@@ -20,6 +21,8 @@ source.set_reverb(
   dry: 0.5
 )
 
-sleep clip.duration + 2.0
+# Play for 5 seconds then stop
+sleep 5.0
+source.stop
 
 puts "Done!"

@@ -378,6 +378,20 @@ VALUE audio_set_pos(VALUE self, VALUE channel_id, VALUE angle, VALUE distance)
     return Qnil;
 }
 
+VALUE audio_set_looping(VALUE self, VALUE channel_id, VALUE looping)
+{
+    int channel = NUM2INT(channel_id);
+    ma_bool32 loop = RTEST(looping) ? MA_TRUE : MA_FALSE;
+
+    if (channel < 0 || channel >= MAX_CHANNELS || channels[channel] == NULL) {
+        return Qnil;
+    }
+
+    ma_sound_set_looping(channels[channel], loop);
+
+    return Qnil;
+}
+
 // ============================================================================
 // Delay Tap Controls
 // ============================================================================
@@ -547,6 +561,7 @@ void Init_audio(void)
     rb_define_singleton_method(mAudio, "set_volume", audio_set_volume, 2);
     rb_define_singleton_method(mAudio, "set_pitch", audio_set_pitch, 2);
     rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
+    rb_define_singleton_method(mAudio, "set_looping", audio_set_looping, 2);
 
     // Delay taps
     rb_define_singleton_method(mAudio, "add_delay_tap", audio_add_delay_tap, 3);

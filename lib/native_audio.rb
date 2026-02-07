@@ -87,6 +87,10 @@ module NativeAudio
       NativeAudio.audio_driver.set_pitch(@channel, pitch)
     end
 
+    def set_looping(looping)
+      NativeAudio.audio_driver.set_looping(@channel, looping)
+    end
+
     def add_delay_tap(time_ms:, volume:)
       tap_id = NativeAudio.audio_driver.add_delay_tap(@channel, time_ms, volume)
       tap = DelayTap.new(self, tap_id, time_ms, volume)
