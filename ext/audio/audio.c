@@ -331,22 +331,15 @@ VALUE audio_stop(VALUE self, VALUE channel_id)
         return Qnil;
     }
 
+    ma_uint64 now = ma_engine_get_time_in_pcm_frames(&engine);
+    ma_uint32 sample_rate = ma_engine_get_sample_rate(&engine);
+
     ma_sound_stop(channels[channel]);
     ma_sound_uninit(channels[channel]);
     free(channels[channel]);
     channels[channel] = NULL;
 
-    if (delay_nodes[channel] != NULL) {
-        multi_tap_delay_uninit(delay_nodes[channel]);
-        free(delay_nodes[channel]);
-        delay_nodes[channel] = NULL;
-    }
-
-    if (reverb_nodes[channel] != NULL) {
-        reverb_uninit(reverb_nodes[channel]);
-        free(reverb_nodes[channel]);
-        reverb_nodes[channel] = NULL;
-    }
+    drain_until_frame[channel] = now + (ma_uint64)(REVERB_DRAIN_SECONDS * sample_rate);
 
     return Qnil;
 }
