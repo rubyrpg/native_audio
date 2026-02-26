@@ -8,7 +8,6 @@ source = NativeAudio::AudioSource.new(clip)
 
 puts "Playing with looping, delay + reverb..."
 source.play
-source.set_looping(true)
 
 # Add a slapback echo
 source.add_delay_tap(time_ms: 200, volume: 0.5)
@@ -21,11 +20,11 @@ source.set_reverb(
   dry: 0.5
 )
 
-# Play for 5 seconds then stop
-sleep 5.0
+sleep 3
 source.stop
+
 sleep 1
 source.play
-sleep 5
+sleep 3
 
 puts "Done!"
