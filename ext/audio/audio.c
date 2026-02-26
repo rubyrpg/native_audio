@@ -183,7 +183,7 @@ VALUE audio_duration(VALUE self, VALUE clip)
 static void cleanup_finished_channels(void)
 {
     for (int i = 0; i < MAX_CHANNELS; i++) {
-        if (channels[i] != NULL && !ma_sound_is_playing(channels[i])) {
+        if (channels[i] != NULL && ma_sound_at_end(channels[i])) {
             ma_sound_uninit(channels[i]);
             free(channels[i]);
             channels[i] = NULL;
