@@ -24,5 +24,8 @@ source.set_reverb(
 # Play for 5 seconds then stop
 sleep 5.0
 source.stop
+sleep 1
+source.play
+sleep 5
 
 puts "Done!"
