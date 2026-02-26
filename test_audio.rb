@@ -20,7 +20,7 @@ source.set_reverb(
   dry: 0.5
 )
 
-sleep 3
+sleep 0.1
 source.stop
 
 sleep 1
