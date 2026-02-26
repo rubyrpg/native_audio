@@ -21,6 +21,7 @@ ma_sound *sounds[MAX_SOUNDS];
 ma_sound *channels[MAX_CHANNELS];
 multi_tap_delay_node *delay_nodes[MAX_CHANNELS];
 reverb_node *reverb_nodes[MAX_CHANNELS];
+ma_uint64 drain_until_frame[MAX_CHANNELS];
 int sound_count = 0;
 int engine_initialized = 0;
 int context_initialized = 0;
@@ -182,12 +183,21 @@ VALUE audio_duration(VALUE self, VALUE clip)
 
 static void cleanup_finished_channels(void)
 {
+    ma_uint64 now = ma_engine_get_time_in_pcm_frames(&engine);
+    ma_uint32 sample_rate = ma_engine_get_sample_rate(&engine);
+    ma_uint64 drain_frames = (ma_uint64)(REVERB_DRAIN_SECONDS * sample_rate);
+
     for (int i = 0; i < MAX_CHANNELS; i++) {
+        // Phase 1: sound finished - uninit the sound, start drain timer
         if (channels[i] != NULL && ma_sound_at_end(channels[i])) {
             ma_sound_uninit(channels[i]);
             free(channels[i]);
             channels[i] = NULL;
+            drain_until_frame[i] = now + drain_frames;
+        }
 
+        // Phase 2: drain timer expired - uninit delay and reverb nodes
+        if (drain_until_frame[i] != 0 && now >= drain_until_frame[i]) {
             if (delay_nodes[i] != NULL) {
                 multi_tap_delay_uninit(delay_nodes[i]);
                 free(delay_nodes[i]);
@@ -199,6 +209,8 @@ static void cleanup_finished_channels(void)
                 free(reverb_nodes[i]);
                 reverb_nodes[i] = NULL;
             }
+
+            drain_until_frame[i] = 0;
         }
     }
 }
@@ -579,6 +591,7 @@ void Init_audio(void)
         channels[i] = NULL;
         delay_nodes[i] = NULL;
         reverb_nodes[i] = NULL;
+        drain_until_frame[i] = 0;
     }
 
     VALUE mAudio = rb_define_module("Audio");
