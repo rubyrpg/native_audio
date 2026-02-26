@@ -180,6 +180,29 @@ VALUE audio_duration(VALUE self, VALUE clip)
 // Playback Controls
 // ============================================================================
 
+static void cleanup_finished_channels(void)
+{
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] != NULL && !ma_sound_is_playing(channels[i])) {
+            ma_sound_uninit(channels[i]);
+            free(channels[i]);
+            channels[i] = NULL;
+
+            if (delay_nodes[i] != NULL) {
+                multi_tap_delay_uninit(delay_nodes[i]);
+                free(delay_nodes[i]);
+                delay_nodes[i] = NULL;
+            }
+
+            if (reverb_nodes[i] != NULL) {
+                reverb_uninit(reverb_nodes[i]);
+                free(reverb_nodes[i]);
+                reverb_nodes[i] = NULL;
+            }
+        }
+    }
+}
+
 VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
 {
     int channel = NUM2INT(channel_id);
@@ -194,6 +217,8 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
         rb_raise(rb_eArgError, "Invalid channel ID: %d", channel);
         return Qnil;
     }
+
+    cleanup_finished_channels();
 
     // Clean up existing resources on this channel
     if (channels[channel] != NULL) {
