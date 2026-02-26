@@ -295,7 +295,21 @@ VALUE audio_stop(VALUE self, VALUE channel_id)
     }
 
     ma_sound_stop(channels[channel]);
-    ma_sound_seek_to_pcm_frame(channels[channel], 0);
+    ma_sound_uninit(channels[channel]);
+    free(channels[channel]);
+    channels[channel] = NULL;
+
+    if (delay_nodes[channel] != NULL) {
+        multi_tap_delay_uninit(delay_nodes[channel]);
+        free(delay_nodes[channel]);
+        delay_nodes[channel] = NULL;
+    }
+
+    if (reverb_nodes[channel] != NULL) {
+        reverb_uninit(reverb_nodes[channel]);
+        free(reverb_nodes[channel]);
+        reverb_nodes[channel] = NULL;
+    }
 
     return Qnil;
 }
