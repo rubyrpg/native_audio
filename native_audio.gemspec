@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = 'native_audio'
-  spec.version       = '0.5.3'
+  spec.version       = '0.5.4'
   spec.authors       = ['Max Hatfull']
   spec.email         = ['max.hatfull@gmail.com']
   spec.summary       = 'A simple audio library for Ruby'

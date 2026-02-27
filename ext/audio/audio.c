@@ -189,7 +189,7 @@ static void cleanup_finished_channels(void)
 
     for (int i = 0; i < MAX_CHANNELS; i++) {
         // Phase 1: sound finished - uninit the sound, start drain timer
-        if (channels[i] != NULL && ma_sound_at_end(channels[i])) {
+        if (channels[i] != NULL && ma_sound_at_end(channels[i]) && !ma_sound_is_looping(channels[i])) {
             ma_sound_uninit(channels[i]);
             free(channels[i]);
             channels[i] = NULL;
