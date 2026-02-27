@@ -232,6 +232,9 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
 
     cleanup_finished_channels();
 
+    // Cancel any pending drain timer for this channel
+    drain_until_frame[channel] = 0;
+
     // Clean up existing resources on this channel
     if (channels[channel] != NULL) {
         ma_sound_stop(channels[channel]);
