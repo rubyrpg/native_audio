@@ -439,6 +439,20 @@ VALUE audio_set_pan(VALUE self, VALUE channel_id, VALUE pan)
     return Qnil;
 }
 
+VALUE audio_seek(VALUE self, VALUE channel_id, VALUE seconds)
+{
+    int channel = NUM2INT(channel_id);
+    float s = (float)NUM2DBL(seconds);
+
+    if (channel < 0 || channel >= MAX_CHANNELS || channels[channel] == NULL) {
+        return Qnil;
+    }
+
+    ma_sound_seek_to_second(channels[channel], s);
+
+    return Qnil;
+}
+
 VALUE audio_set_looping(VALUE self, VALUE channel_id, VALUE looping)
 {
     int channel = NUM2INT(channel_id);
@@ -625,6 +639,7 @@ void Init_audio(void)
     rb_define_singleton_method(mAudio, "set_pos", audio_set_pos, 3);
     rb_define_singleton_method(mAudio, "set_pan", audio_set_pan, 2);
     rb_define_singleton_method(mAudio, "set_looping", audio_set_looping, 2);
+    rb_define_singleton_method(mAudio, "seek", audio_seek, 2);
 
     // Delay taps
     rb_define_singleton_method(mAudio, "add_delay_tap", audio_add_delay_tap, 3);

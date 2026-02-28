@@ -89,6 +89,10 @@ module NativeAudio
       NativeAudio.audio_driver.set_pan(@channel, pan)
     end
 
+    def seek(seconds)
+      NativeAudio.audio_driver.seek(@channel, seconds)
+    end
+
     def set_volume(volume)
       @params[:volume] = volume
       NativeAudio.audio_driver.set_volume(@channel, volume)
