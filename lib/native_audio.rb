@@ -3,7 +3,6 @@
 require_relative './audio'
 require_relative './dummy_audio'
 
-puts "[NativeAudio] Loading local development version"
 Audio.init unless ENV['DUMMY_AUDIO_BACKEND'] == 'true'
 
 module NativeAudio
