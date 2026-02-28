@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
+require 'set'
+
 # Dummy audio backend for CI/testing environments without audio hardware.
 # Has the same interface as the Audio C extension but does nothing.
 module DummyAudio
   @sound_count = 0
   @tap_counts = {}
+  @active_channels = Set.new
+  @channel_freed_callback = nil
 
   def self.init
     nil
@@ -22,10 +26,12 @@ module DummyAudio
 
   def self.play(channel, clip)
     @tap_counts[channel] = 0
+    @active_channels << channel
     channel
   end
 
   def self.stop(channel)
+    @active_channels.delete(channel)
     nil
   end
 
@@ -98,5 +104,13 @@ module DummyAudio
 
   def self.set_reverb_dry(channel, dry)
     nil
+  end
+
+  def self.next_free_channel
+    (0..1023).find { |i| !@active_channels.include?(i) } || -1
+  end
+
+  def self.on_channel_freed(callback)
+    @channel_freed_callback = callback
   end
 end

@@ -22,6 +22,7 @@ ma_sound *channels[MAX_CHANNELS];
 multi_tap_delay_node *delay_nodes[MAX_CHANNELS];
 reverb_node *reverb_nodes[MAX_CHANNELS];
 ma_uint64 drain_until_frame[MAX_CHANNELS];
+static VALUE channel_freed_callback = Qnil;
 int sound_count = 0;
 int engine_initialized = 0;
 int context_initialized = 0;
@@ -194,6 +195,10 @@ static void cleanup_finished_channels(void)
             free(channels[i]);
             channels[i] = NULL;
             drain_until_frame[i] = now + drain_frames;
+
+            if (channel_freed_callback != Qnil) {
+                rb_funcall(channel_freed_callback, rb_intern("call"), 1, INT2NUM(i));
+            }
         }
 
         // Phase 2: drain timer expired - uninit delay and reverb nodes
@@ -605,6 +610,35 @@ VALUE audio_set_reverb_dry(VALUE self, VALUE channel_id, VALUE dry)
 }
 
 // ============================================================================
+// Channel Query
+// ============================================================================
+
+VALUE audio_next_free_channel(VALUE self)
+{
+    cleanup_finished_channels();
+
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] == NULL && drain_until_frame[i] == 0) {
+            return rb_int2inum(i);
+        }
+    }
+
+    return rb_int2inum(-1);
+}
+
+VALUE audio_on_channel_freed(VALUE self, VALUE callback)
+{
+    if (channel_freed_callback != Qnil) {
+        rb_gc_unregister_address(&channel_freed_callback);
+    }
+
+    channel_freed_callback = callback;
+    rb_gc_register_address(&channel_freed_callback);
+
+    return Qnil;
+}
+
+// ============================================================================
 // Ruby Module Setup
 // ============================================================================
 
@@ -653,4 +687,8 @@ void Init_audio(void)
     rb_define_singleton_method(mAudio, "set_reverb_damping", audio_set_reverb_damping, 2);
     rb_define_singleton_method(mAudio, "set_reverb_wet", audio_set_reverb_wet, 2);
     rb_define_singleton_method(mAudio, "set_reverb_dry", audio_set_reverb_dry, 2);
+
+    // Channel query
+    rb_define_singleton_method(mAudio, "next_free_channel", audio_next_free_channel, 0);
+    rb_define_singleton_method(mAudio, "on_channel_freed", audio_on_channel_freed, 1);
 }
