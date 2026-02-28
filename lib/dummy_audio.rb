@@ -49,6 +49,10 @@ module DummyAudio
     nil
   end
 
+  def self.set_pan(channel, pan)
+    nil
+  end
+
   def self.set_looping(channel, looping)
     nil
   end

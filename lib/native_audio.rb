@@ -3,6 +3,7 @@
 require_relative './audio'
 require_relative './dummy_audio'
 
+puts "[NativeAudio] Loading local development version"
 Audio.init unless ENV['DUMMY_AUDIO_BACKEND'] == 'true'
 
 module NativeAudio
@@ -83,6 +84,11 @@ module NativeAudio
       NativeAudio.audio_driver.set_pos(@channel, angle, distance)
     end
 
+    def set_pan(pan)
+      @params[:pan] = pan
+      NativeAudio.audio_driver.set_pan(@channel, pan)
+    end
+
     def set_volume(volume)
       @params[:volume] = volume
       NativeAudio.audio_driver.set_volume(@channel, volume)
@@ -133,6 +139,7 @@ module NativeAudio
       NativeAudio.audio_driver.set_volume(@channel, @params[:volume]) if @params.key?(:volume)
       NativeAudio.audio_driver.set_pitch(@channel, @params[:pitch]) if @params.key?(:pitch)
       NativeAudio.audio_driver.set_looping(@channel, @params[:looping]) if @params.key?(:looping)
+      NativeAudio.audio_driver.set_pan(@channel, @params[:pan]) if @params.key?(:pan)
       NativeAudio.audio_driver.set_pos(@channel, *@params[:pos]) if @params.key?(:pos)
 
       if @params.key?(:reverb)
