@@ -618,6 +618,14 @@ VALUE audio_next_free_channel(VALUE self)
 {
     cleanup_finished_channels(-1);
 
+    // Prefer fully drained channels to preserve reverb tails
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] == NULL && drain_until_frame[i] == 0) {
+            return rb_int2inum(i);
+        }
+    }
+
+    // Fall back to draining channels if all else is exhausted
     for (int i = 0; i < MAX_CHANNELS; i++) {
         if (channels[i] == NULL) {
             return rb_int2inum(i);
@@ -625,6 +633,34 @@ VALUE audio_next_free_channel(VALUE self)
     }
 
     return rb_int2inum(-1);
+}
+
+VALUE audio_reset_all_channels(VALUE self)
+{
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] != NULL) {
+            ma_sound_stop(channels[i]);
+            ma_sound_uninit(channels[i]);
+            free(channels[i]);
+            channels[i] = NULL;
+        }
+
+        if (delay_nodes[i] != NULL) {
+            multi_tap_delay_uninit(delay_nodes[i]);
+            free(delay_nodes[i]);
+            delay_nodes[i] = NULL;
+        }
+
+        if (reverb_nodes[i] != NULL) {
+            reverb_uninit(reverb_nodes[i]);
+            free(reverb_nodes[i]);
+            reverb_nodes[i] = NULL;
+        }
+
+        drain_until_frame[i] = 0;
+    }
+
+    return Qnil;
 }
 
 VALUE audio_on_channel_freed(VALUE self, VALUE callback)
@@ -692,4 +728,5 @@ void Init_audio(void)
     // Channel query
     rb_define_singleton_method(mAudio, "next_free_channel", audio_next_free_channel, 0);
     rb_define_singleton_method(mAudio, "on_channel_freed", audio_on_channel_freed, 1);
+    rb_define_singleton_method(mAudio, "reset_all_channels", audio_reset_all_channels, 0);
 }

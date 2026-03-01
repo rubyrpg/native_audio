@@ -113,4 +113,8 @@ module DummyAudio
   def self.on_channel_freed(callback)
     @channel_freed_callback = callback
   end
+
+  def self.reset_all_channels
+    @active_channels.clear
+  end
 end

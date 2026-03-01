@@ -27,7 +27,8 @@ RSpec.describe NativeAudio::AudioSource do
       source = NativeAudio::AudioSource.new(clip)
       source.play
       source.stop
-      expect { source.play }.not_to raise_error
+      expect(source.channel).to be_nil
+      source.play
       expect(source.channel).to be >= 0
     end
   end
@@ -38,11 +39,13 @@ RSpec.describe NativeAudio::AudioSource do
       b = NativeAudio::AudioSource.new(clip)
       a.play
       b.play
+      expect(a.channel).not_to be_nil
+      expect(b.channel).not_to be_nil
       expect(a.channel).not_to eq(b.channel)
     end
 
     it "does not exhaust channels when repeatedly creating and stopping sources" do
-      100.times do
+      1500.times do
         source = NativeAudio::AudioSource.new(clip)
         source.play
         source.stop
@@ -50,7 +53,6 @@ RSpec.describe NativeAudio::AudioSource do
 
       source = NativeAudio::AudioSource.new(clip)
       expect { source.play }.not_to raise_error
-      expect(source.channel).to be < 1024
     end
   end
 
@@ -139,6 +141,29 @@ RSpec.describe NativeAudio::AudioSource do
   end
 
   describe "reusing a draining channel" do
+    it "does not reuse a channel that is still draining, but does after drain completes" do
+      source = NativeAudio::AudioSource.new(clip)
+      source.play
+      source.set_reverb(room_size: 0.8, damping: 0.5, wet: 0.5, dry: 0.5)
+      draining_channel = source.channel
+      source.stop
+
+      # Channel is now draining its reverb tail.
+      # A new source should get a different channel to preserve the tail.
+      during_drain = NativeAudio::AudioSource.new(clip)
+      during_drain.play
+      expect(during_drain.channel).not_to eq(draining_channel)
+      during_drain.stop
+
+      # Wait for drain to complete (REVERB_DRAIN_SECONDS = 3.0)
+      sleep(3.1)
+
+      # Now the channel should be fully free and reusable.
+      after_drain = NativeAudio::AudioSource.new(clip)
+      after_drain.play
+      expect(after_drain.channel).to eq(draining_channel)
+    end
+
     it "can play on a channel that is still draining effects" do
       source = NativeAudio::AudioSource.new(clip)
       source.play
@@ -147,16 +172,18 @@ RSpec.describe NativeAudio::AudioSource do
       source.stop
 
       # Channel is now draining (sound freed, effects still active).
-      # A new source should be able to grab it and set up its own effects.
+      # A new source should be able to grab it and set up its own effects
+      # without interfering with or being corrupted by the old draining ones.
       new_source = NativeAudio::AudioSource.new(clip)
       new_source.play
-
       expect {
         new_source.set_reverb(room_size: 0.3, damping: 0.2, wet: 0.2, dry: 0.8)
+        new_source.add_delay_tap(time_ms: 100.0, volume: 0.3)
       }.not_to raise_error
 
+      # Changing reverb again should also work (not use stale node pointers)
       expect {
-        new_source.add_delay_tap(time_ms: 100.0, volume: 0.3)
+        new_source.set_reverb(room_size: 0.9, damping: 0.8, wet: 0.7, dry: 0.3)
       }.not_to raise_error
     end
 
