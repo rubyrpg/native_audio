@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 ENV['NATIVE_AUDIO_DRIVER'] = 'null'
 
 require_relative '../lib/native_audio'
