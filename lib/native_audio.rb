@@ -3,7 +3,9 @@
 require_relative './audio'
 require_relative './dummy_audio'
 
-Audio.init unless ENV['DUMMY_AUDIO_BACKEND'] == 'true'
+unless ENV['DUMMY_AUDIO_BACKEND'] == 'true'
+  Audio.init
+end
 
 module NativeAudio
   def self.audio_driver
@@ -55,56 +57,74 @@ module NativeAudio
 
     def initialize(clip)
       @clip = clip
-      @channel = AudioSource.channels.count
       @delay_taps = []
       @params = {}
-      AudioSource.channels << self
+      @channel = nil
     end
 
     def play
+      acquire_channel unless @channel
       NativeAudio.audio_driver.play(@channel, @clip.clip)
       apply_params
     end
 
     def stop
+      return unless @channel
       NativeAudio.audio_driver.stop(@channel)
+      self.class.owners.delete(@channel)
+      @channel = nil
+    end
+
+    def channel_freed
+      @channel = nil
+    end
+
+    def self.owners
+      @owners ||= {}
+    end
+
+    def self.setup_channel_freed_callback
+      NativeAudio.audio_driver.on_channel_freed(proc { |channel|
+        owner = owners.delete(channel)
+        owner&.channel_freed
+      })
     end
 
     def pause
-      NativeAudio.audio_driver.pause(@channel)
+      NativeAudio.audio_driver.pause(@channel) if @channel
     end
 
     def resume
-      NativeAudio.audio_driver.resume(@channel)
+      NativeAudio.audio_driver.resume(@channel) if @channel
     end
 
     def set_pos(angle, distance)
       @params[:pos] = [angle, distance]
-      NativeAudio.audio_driver.set_pos(@channel, angle, distance)
+      NativeAudio.audio_driver.set_pos(@channel, angle, distance) if @channel
     end
 
     def set_pan(pan)
       @params[:pan] = pan
-      NativeAudio.audio_driver.set_pan(@channel, pan)
+      NativeAudio.audio_driver.set_pan(@channel, pan) if @channel
     end
 
     def seek(seconds)
-      NativeAudio.audio_driver.seek(@channel, seconds)
+      NativeAudio.audio_driver.seek(@channel, seconds) if @channel
     end
 
     def set_volume(volume)
       @params[:volume] = volume
-      NativeAudio.audio_driver.set_volume(@channel, volume)
+      NativeAudio.audio_driver.set_volume(@channel, volume) if @channel
     end
 
     def set_pitch(pitch)
       @params[:pitch] = pitch
-      NativeAudio.audio_driver.set_pitch(@channel, pitch)
+      NativeAudio.audio_driver.set_pitch(@channel, pitch) if @channel
     end
 
     def set_looping(looping)
       @params[:looping] = looping
-      NativeAudio.audio_driver.set_looping(@channel, looping)
+      NativeAudio.audio_driver.set_looping(@channel, looping) if @channel
     end
 
     def add_delay_tap(time_ms:, volume:)
@@ -116,27 +136,31 @@ module NativeAudio
 
     def enable_reverb(enabled = true)
       @params[:reverb_enabled] = enabled
-      NativeAudio.audio_driver.enable_reverb(@channel, enabled)
+      NativeAudio.audio_driver.enable_reverb(@channel, enabled) if @channel
     end
 
     def set_reverb(room_size: 0.5, damping: 0.3, wet: 0.3, dry: 1.0)
       @params[:reverb] = { room_size: room_size, damping: damping, wet: wet, dry: dry }
-      NativeAudio.audio_driver.enable_reverb(@channel, true)
-      NativeAudio.audio_driver.set_reverb_room_size(@channel, room_size)
-      NativeAudio.audio_driver.set_reverb_damping(@channel, damping)
-      NativeAudio.audio_driver.set_reverb_wet(@channel, wet)
-      NativeAudio.audio_driver.set_reverb_dry(@channel, dry)
+      if @channel
+        NativeAudio.audio_driver.enable_reverb(@channel, true)
+        NativeAudio.audio_driver.set_reverb_room_size(@channel, room_size)
+        NativeAudio.audio_driver.set_reverb_damping(@channel, damping)
+        NativeAudio.audio_driver.set_reverb_wet(@channel, wet)
+        NativeAudio.audio_driver.set_reverb_dry(@channel, dry)
+      end
     end
 
     def delay_taps
       @delay_taps
     end
 
-    def self.channels
-      @channels ||= []
-    end
-
     private
+
+    def acquire_channel
+      @channel = NativeAudio.audio_driver.next_free_channel
+      raise "No free audio channels available" if @channel < 0
+      self.class.owners[@channel] = self
+    end
 
     def apply_params
       NativeAudio.audio_driver.set_volume(@channel, @params[:volume]) if @params.key?(:volume)
@@ -161,4 +185,6 @@ module NativeAudio
       end
     end
   end
+
+  AudioSource.setup_channel_freed_callback
 end

@@ -22,6 +22,7 @@ ma_sound *channels[MAX_CHANNELS];
 multi_tap_delay_node *delay_nodes[MAX_CHANNELS];
 reverb_node *reverb_nodes[MAX_CHANNELS];
 ma_uint64 drain_until_frame[MAX_CHANNELS];
+static VALUE channel_freed_callback = Qnil;
 int sound_count = 0;
 int engine_initialized = 0;
 int context_initialized = 0;
@@ -181,19 +182,24 @@ VALUE audio_duration(VALUE self, VALUE clip)
 // Playback Controls
 // ============================================================================
 
-static void cleanup_finished_channels(void)
+static void cleanup_finished_channels(int skip_channel)
 {
     ma_uint64 now = ma_engine_get_time_in_pcm_frames(&engine);
     ma_uint32 sample_rate = ma_engine_get_sample_rate(&engine);
     ma_uint64 drain_frames = (ma_uint64)(REVERB_DRAIN_SECONDS * sample_rate);
 
     for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (i == skip_channel) continue;
         // Phase 1: sound finished - uninit the sound, start drain timer
         if (channels[i] != NULL && ma_sound_at_end(channels[i]) && !ma_sound_is_looping(channels[i])) {
             ma_sound_uninit(channels[i]);
             free(channels[i]);
             channels[i] = NULL;
             drain_until_frame[i] = now + drain_frames;
+
+            if (channel_freed_callback != Qnil) {
+                rb_funcall(channel_freed_callback, rb_intern("call"), 1, INT2NUM(i));
+            }
         }
 
         // Phase 2: drain timer expired - uninit delay and reverb nodes
@@ -230,7 +236,7 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
         return Qnil;
     }
 
-    cleanup_finished_channels();
+    cleanup_finished_channels(channel);
 
     // Cancel any pending drain timer for this channel
     drain_until_frame[channel] = 0;
@@ -605,6 +611,71 @@ VALUE audio_set_reverb_dry(VALUE self, VALUE channel_id, VALUE dry)
 }
 
 // ============================================================================
+// Channel Query
+// ============================================================================
+
+VALUE audio_next_free_channel(VALUE self)
+{
+    cleanup_finished_channels(-1);
+
+    // Prefer fully drained channels to preserve reverb tails
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] == NULL && drain_until_frame[i] == 0) {
+            return rb_int2inum(i);
+        }
+    }
+
+    // Fall back to draining channels if all else is exhausted
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] == NULL) {
+            return rb_int2inum(i);
+        }
+    }
+
+    return rb_int2inum(-1);
+}
+
+VALUE audio_reset_all_channels(VALUE self)
+{
+    for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (channels[i] != NULL) {
+            ma_sound_stop(channels[i]);
+            ma_sound_uninit(channels[i]);
+            free(channels[i]);
+            channels[i] = NULL;
+        }
+
+        if (delay_nodes[i] != NULL) {
+            multi_tap_delay_uninit(delay_nodes[i]);
+            free(delay_nodes[i]);
+            delay_nodes[i] = NULL;
+        }
+
+        if (reverb_nodes[i] != NULL) {
+            reverb_uninit(reverb_nodes[i]);
+            free(reverb_nodes[i]);
+            reverb_nodes[i] = NULL;
+        }
+
+        drain_until_frame[i] = 0;
+    }
+
+    return Qnil;
+}
+
+VALUE audio_on_channel_freed(VALUE self, VALUE callback)
+{
+    if (channel_freed_callback != Qnil) {
+        rb_gc_unregister_address(&channel_freed_callback);
+    }
+
+    channel_freed_callback = callback;
+    rb_gc_register_address(&channel_freed_callback);
+
+    return Qnil;
+}
+
+// ============================================================================
 // Ruby Module Setup
 // ============================================================================
 
@@ -653,4 +724,9 @@ void Init_audio(void)
     rb_define_singleton_method(mAudio, "set_reverb_damping", audio_set_reverb_damping, 2);
     rb_define_singleton_method(mAudio, "set_reverb_wet", audio_set_reverb_wet, 2);
     rb_define_singleton_method(mAudio, "set_reverb_dry", audio_set_reverb_dry, 2);
+
+    // Channel query
+    rb_define_singleton_method(mAudio, "next_free_channel", audio_next_free_channel, 0);
+    rb_define_singleton_method(mAudio, "on_channel_freed", audio_on_channel_freed, 1);
+    rb_define_singleton_method(mAudio, "reset_all_channels", audio_reset_all_channels, 0);
 }
