@@ -182,13 +182,14 @@ VALUE audio_duration(VALUE self, VALUE clip)
 // Playback Controls
 // ============================================================================
 
-static void cleanup_finished_channels(void)
+static void cleanup_finished_channels(int skip_channel)
 {
     ma_uint64 now = ma_engine_get_time_in_pcm_frames(&engine);
     ma_uint32 sample_rate = ma_engine_get_sample_rate(&engine);
     ma_uint64 drain_frames = (ma_uint64)(REVERB_DRAIN_SECONDS * sample_rate);
 
     for (int i = 0; i < MAX_CHANNELS; i++) {
+        if (i == skip_channel) continue;
         // Phase 1: sound finished - uninit the sound, start drain timer
         if (channels[i] != NULL && ma_sound_at_end(channels[i]) && !ma_sound_is_looping(channels[i])) {
             ma_sound_uninit(channels[i]);
@@ -235,7 +236,7 @@ VALUE audio_play(VALUE self, VALUE channel_id, VALUE clip)
         return Qnil;
     }
 
-    cleanup_finished_channels();
+    cleanup_finished_channels(channel);
 
     // Cancel any pending drain timer for this channel
     drain_until_frame[channel] = 0;
@@ -615,10 +616,10 @@ VALUE audio_set_reverb_dry(VALUE self, VALUE channel_id, VALUE dry)
 
 VALUE audio_next_free_channel(VALUE self)
 {
-    cleanup_finished_channels();
+    cleanup_finished_channels(-1);
 
     for (int i = 0; i < MAX_CHANNELS; i++) {
-        if (channels[i] == NULL && drain_until_frame[i] == 0) {
+        if (channels[i] == NULL) {
             return rb_int2inum(i);
         }
     }
