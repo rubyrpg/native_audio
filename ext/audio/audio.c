@@ -102,6 +102,7 @@ VALUE audio_init(VALUE self)
 
     ma_engine_config config = ma_engine_config_init();
     config.listenerCount = 1;
+    config.channels = 2;
 
     if (use_null) {
         ma_backend backends[] = { ma_backend_null };
